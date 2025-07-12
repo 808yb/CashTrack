@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#F5BC26"/>
+  
+  <!-- Main coin -->
+  <ellipse cx="256" cy="256" rx="180" ry="100" fill="#FAC760"/>
+  <path d="M256 120C320 120 376 140 420 170C464 200 480 240 480 256C480 272 464 312 420 342C376 372 320 392 256 392C192 392 136 372 92 342C48 312 32 272 32 256C32 240 48 200 92 170C136 140 192 120 256 120Z" stroke="#D4AF37" stroke-width="8"/>
+  
+  <!-- Inner coin details -->
+  <ellipse cx="256" cy="256" rx="140" ry="80" fill="#F7D993"/>
+  <path d="M256 180C300 180 340 195 370 215C400 235 410 260 410 256C410 252 400 277 370 297C340 317 300 332 256 332C212 332 172 317 142 297C112 277 102 252 102 256C102 260 112 235 142 215C172 195 212 180 256 180Z" stroke="#D4AF37" stroke-width="4"/>
+  
+  <!-- Euro symbol -->
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="#8B4513">€</text>
+  
+  <!-- Small decorative coins -->
+  <circle cx="120" cy="120" r="20" fill="#F5BC26" opacity="0.8"/>
+  <circle cx="392" cy="120" r="20" fill="#F5BC26" opacity="0.8"/>
+  <circle cx="120" cy="392" r="20" fill="#F5BC26" opacity="0.8"/>
+  <circle cx="392" cy="392" r="20" fill="#F5BC26" opacity="0.8"/>
+</svg> 
