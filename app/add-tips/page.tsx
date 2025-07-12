@@ -223,6 +223,8 @@ export default function AddTips() {
           <div className="space-y-4">
             <Input
               type="text"
+              inputMode="decimal"
+              pattern="[0-9,]*"
               placeholder="0,00"
               value={customAmount}
               onChange={(e) => handleNumberInput(e.target.value, setCustomAmount)}
@@ -291,6 +293,8 @@ export default function AddTips() {
             <div className="text-center text-gray-600">Aktueller Betrag: {formatCurrency(todayTotal)}</div>
             <Input
               type="text"
+              inputMode="decimal"
+              pattern="[0-9,]*"
               placeholder="0,00"
               value={editAmount}
               onChange={(e) => handleNumberInput(e.target.value, setEditAmount)}
@@ -354,6 +358,8 @@ export default function AddTips() {
             <div className="text-center text-gray-600">Neuer Wert für ausgewählten Button:</div>
             <Input
               type="text"
+              inputMode="decimal"
+              pattern="[0-9,]*"
               placeholder="0,00"
               value={editTipAmount}
               onChange={(e) => handleNumberInput(e.target.value, setEditTipAmount)}

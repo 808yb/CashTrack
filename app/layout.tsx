@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
+import Head from 'next/head'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -36,16 +37,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <head>
+      <Head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CashTrack" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#f5bc26" />
-        <link rel="icon" type="image/png" href="/icon.png" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="theme-color" content="#f3f4f6" />
+        <link rel="icon" href="/icon.png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
         <link rel="manifest" href="/manifest.json" />
-      </head>
+      </Head>
       <body className={inter.className}>
         <div className="min-h-screen bg-gray-200">{children}</div>
         <Analytics />
