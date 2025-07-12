@@ -23,6 +23,10 @@ export default function AddTips() {
   const [shiftNote, setShiftNote] = useState("")
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editAmount, setEditAmount] = useState("")
+  const [showEditTipDialog, setShowEditTipDialog] = useState(false)
+  const [editTipAmount, setEditTipAmount] = useState("")
+  const [tipValues, setTipValues] = useState({ one: 1, two: 2.5, five: 5 })
+  const [selectedTipButton, setSelectedTipButton] = useState<'one' | 'two' | 'five'>('one')
 
   useEffect(() => {
     const loadTodayTips = () => {
@@ -74,6 +78,15 @@ export default function AddTips() {
     }
   }
 
+  const handleEditTipValues = () => {
+    const amount = Number.parseFloat(editTipAmount.replace(",", "."))
+    if (!isNaN(amount) && amount > 0) {
+      setTipValues(prev => ({ ...prev, [selectedTipButton]: amount }))
+      setEditTipAmount("")
+      setShowEditTipDialog(false)
+    }
+  }
+
   const handleEndShift = () => {
     // End the shift with the current total and optional note
     const noteToSave = shiftNote.trim() || undefined
@@ -88,6 +101,14 @@ export default function AddTips() {
     router.push("/")
   }
 
+  // Input validation for numbers and comma only
+  const handleNumberInput = (value: string, setter: (value: string) => void) => {
+    // Only allow numbers, comma, and backspace
+    const regex = /^[0-9,]*$/
+    if (regex.test(value) || value === "") {
+      setter(value)
+    }
+  }
 
 
   return (
@@ -144,9 +165,9 @@ export default function AddTips() {
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-            onClick={() => addTip(1)}
+            onClick={() => addTip(tipValues.one)}
           >
-            <div className="text-xl font-bold text-black">+ 1€</div>
+            <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
             <Coin1Icon width={48} height={48} />
           </Button>
 
@@ -154,9 +175,9 @@ export default function AddTips() {
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-            onClick={() => addTip(2.5)}
+            onClick={() => addTip(tipValues.two)}
           >
-            <div className="text-xl font-bold text-black">+ 2,50€</div>
+            <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
             <Coin2Icon width={48} height={48} />
           </Button>
 
@@ -164,9 +185,9 @@ export default function AddTips() {
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-            onClick={() => addTip(5)}
+            onClick={() => addTip(tipValues.five)}
           >
-            <div className="text-xl font-bold text-black">+ 5€</div>
+            <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
             <Coin5Icon width={48} height={48} />
           </Button>
 
@@ -178,6 +199,17 @@ export default function AddTips() {
           >
             <div className="text-xl font-bold text-black">Freibetrag</div>
             <CustomCoinsIcon width={48} height={48} />
+          </Button>
+        </div>
+
+        {/* Beitrag bearbeiten button */}
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            className="w-full bg-white border-gray-200 hover:bg-gray-50 text-black"
+            onClick={() => setShowEditTipDialog(true)}
+          >
+            Beitrag bearbeiten
           </Button>
         </div>
       </div>
@@ -193,7 +225,7 @@ export default function AddTips() {
               type="text"
               placeholder="0,00"
               value={customAmount}
-              onChange={(e) => setCustomAmount(e.target.value)}
+              onChange={(e) => handleNumberInput(e.target.value, setCustomAmount)}
               className="text-center text-xl"
             />
             <div className="flex gap-2">
@@ -229,6 +261,7 @@ export default function AddTips() {
                 value={shiftNote}
                 onChange={(e) => setShiftNote(e.target.value)}
                 className="bg-gray-200"
+                inputMode="none"
               />
             </div>
 
@@ -260,7 +293,7 @@ export default function AddTips() {
               type="text"
               placeholder="0,00"
               value={editAmount}
-              onChange={(e) => setEditAmount(e.target.value)}
+              onChange={(e) => handleNumberInput(e.target.value, setEditAmount)}
               className="text-center text-xl"
             />
             <div className="flex gap-2">
@@ -268,6 +301,69 @@ export default function AddTips() {
                 Abbrechen
               </Button>
               <Button className="flex-1" onClick={handleEditTips}>
+                Speichern
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tip Values Dialog */}
+      <Dialog open={showEditTipDialog} onOpenChange={setShowEditTipDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle>Beitrag bearbeiten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center text-gray-600 mb-4">Wähle einen Button zum Bearbeiten:</div>
+            
+            {/* Button Selection */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <Button
+                variant={selectedTipButton === 'one' ? 'default' : 'outline'}
+                className={`text-sm ${selectedTipButton === 'one' ? 'bg-black text-white' : 'bg-white text-black'}`}
+                onClick={() => {
+                  setSelectedTipButton('one')
+                  setEditTipAmount(tipValues.one.toString().replace(".", ","))
+                }}
+              >
+                {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€
+              </Button>
+              <Button
+                variant={selectedTipButton === 'two' ? 'default' : 'outline'}
+                className={`text-sm ${selectedTipButton === 'two' ? 'bg-black text-white' : 'bg-white text-black'}`}
+                onClick={() => {
+                  setSelectedTipButton('two')
+                  setEditTipAmount(tipValues.two.toString().replace(".", ","))
+                }}
+              >
+                {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€
+              </Button>
+              <Button
+                variant={selectedTipButton === 'five' ? 'default' : 'outline'}
+                className={`text-sm ${selectedTipButton === 'five' ? 'bg-black text-white' : 'bg-white text-black'}`}
+                onClick={() => {
+                  setSelectedTipButton('five')
+                  setEditTipAmount(tipValues.five.toString().replace(".", ","))
+                }}
+              >
+                {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€
+              </Button>
+            </div>
+
+            <div className="text-center text-gray-600">Neuer Wert für ausgewählten Button:</div>
+            <Input
+              type="text"
+              placeholder="0,00"
+              value={editTipAmount}
+              onChange={(e) => handleNumberInput(e.target.value, setEditTipAmount)}
+              className="text-center text-xl"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowEditTipDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button className="flex-1" onClick={handleEditTipValues}>
                 Speichern
               </Button>
             </div>
