@@ -263,7 +263,6 @@ export default function AddTips() {
                 value={shiftNote}
                 onChange={(e) => setShiftNote(e.target.value)}
                 className="bg-gray-200"
-                inputMode="none"
               />
             </div>
 
