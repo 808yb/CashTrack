@@ -12,11 +12,13 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
   icons: {
     icon: [
+      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' }
     ],
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' }
     ]
   },
   manifest: '/manifest.json',
@@ -40,6 +42,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CashTrack" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#f5bc26" />
+        <link rel="icon" type="image/png" href="/icon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
