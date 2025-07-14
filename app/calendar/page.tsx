@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { Calendar, Plus, User, ChevronLeft, ChevronRight, Home } from "lucide-react"
 import Link from "next/link"
-import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote } from "@/lib/utils"
+import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 
 interface TipEntry {
@@ -19,6 +21,8 @@ export default function CalendarView() {
   const [tips, setTips] = useState<TipEntry[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedDateNote, setSelectedDateNote] = useState<string>("")
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editAmount, setEditAmount] = useState("")
 
   useEffect(() => {
     const loadTips = () => {
@@ -53,7 +57,9 @@ export default function CalendarView() {
 
   // Get the day of the week for the 1st of the month (0 for Sunday, 1 for Monday, etc.)
   const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+    // Convert Sunday-start (0-6) to Monday-start (0-6, where 0=Monday, 6=Sunday)
+    return day === 0 ? 6 : day - 1
   }
 
   const getTipAmountForDate = (date: Date) => {
@@ -107,9 +113,40 @@ export default function CalendarView() {
     }
   }
 
+  const handleEditTips = () => {
+    if (selectedDate) {
+      const amount = Number.parseFloat(editAmount.replace(",", "."))
+      if (!isNaN(amount) && amount >= 0) {
+        // Round to 2 decimal places to avoid floating point precision issues
+        const roundedAmount = Math.round(amount * 100) / 100
+        // Use endShift to consolidate and update the selected date's tips
+        endShift(roundedAmount, selectedDateNote)
+        setEditAmount("")
+        setShowEditDialog(false)
+        
+        // Re-load tips to update the display
+        const storedTips = getStoredTips()
+        setTips(storedTips)
+      }
+    }
+  }
+
+  // Input validation for numbers and comma only
+  const handleNumberInput = (value: string, setter: (value: string) => void) => {
+    // Only allow numbers, comma, and backspace
+    const regex = /^[0-9,]*$/
+    if (regex.test(value) || value === "") {
+      // Limit to 2 decimal places
+      const parts = value.split(",")
+      if (parts.length <= 2 && (parts[1]?.length || 0) <= 2) {
+        setter(value)
+      }
+    }
+  }
+
   const renderCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate)
-    const firstDay = getFirstDayOfMonth(currentDate) // 0 for Sunday, 1 for Monday, etc.
+    const firstDay = getFirstDayOfMonth(currentDate) // 0 for Monday, 1 for Tuesday, etc.
     const days = []
 
     // Add empty cells for days before the first day of the month
@@ -166,7 +203,7 @@ export default function CalendarView() {
     "Dezember",
   ]
 
-  const weekDays = ["S", "M", "T", "W", "T", "F", "S"] // Sunday-start week
+  const weekDays = ["M", "D", "M", "D", "F", "S", "S"] // Monday-start week (Montag, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag, Sonntag)
 
   const selectedDaySummary = selectedDate ? getDaySummary(selectedDate) : { amount: 0, note: "" }
 
@@ -195,7 +232,6 @@ export default function CalendarView() {
               <span className="text-lg font-medium text-black">
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </span>
-              <ChevronLeft className="w-4 h-4 text-black rotate-90" />
             </div>
             <button onClick={() => navigateMonth("next")} className="p-2">
               <ChevronRight className="w-5 h-5 text-black" />
@@ -221,6 +257,19 @@ export default function CalendarView() {
             <h3 className="font-medium text-black mb-2">{formatDate(new Date(selectedDate))}</h3>
             <div className="text-lg font-bold text-black mb-4">{formatCurrency(selectedDaySummary.amount)}</div>
 
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                className="w-full bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+                onClick={() => {
+                  setEditAmount(selectedDaySummary.amount.toString().replace(".", ","))
+                  setShowEditDialog(true)
+                }}
+              >
+                Ändern
+              </Button>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">Notiz:</label>
               <Textarea
@@ -236,6 +285,37 @@ export default function CalendarView() {
           </div>
         )}
       </div>
+
+      {/* Edit Tips Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle>Trinkgeld bearbeiten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center text-gray-600">
+              {selectedDate && `Aktueller Betrag für ${formatDate(new Date(selectedDate))}: ${formatCurrency(selectedDaySummary.amount)}`}
+            </div>
+            <Input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9,]*"
+              placeholder="0,00"
+              value={editAmount}
+              onChange={(e) => handleNumberInput(e.target.value, setEditAmount)}
+              className="text-center text-xl"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowEditDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button className="flex-1" onClick={handleEditTips}>
+                Speichern
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">

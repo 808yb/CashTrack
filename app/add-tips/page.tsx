@@ -61,7 +61,9 @@ export default function AddTips() {
   const handleCustomTip = () => {
     const amount = Number.parseFloat(customAmount.replace(",", "."))
     if (!isNaN(amount) && amount > 0) {
-      addTip(amount)
+      // Round to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(amount * 100) / 100
+      addTip(roundedAmount)
       setCustomAmount("")
       setShowCustomInput(false)
     }
@@ -70,9 +72,11 @@ export default function AddTips() {
   const handleEditTips = () => {
     const amount = Number.parseFloat(editAmount.replace(",", "."))
     if (!isNaN(amount) && amount >= 0) {
+      // Round to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(amount * 100) / 100
       // Use endShift to consolidate and update today's tips
-      endShift(amount, shiftNote) // Pass current note if any
-      setTodayTotal(amount)
+      endShift(roundedAmount, shiftNote) // Pass current note if any
+      setTodayTotal(roundedAmount)
       setEditAmount("")
       setShowEditDialog(false)
     }
@@ -81,7 +85,9 @@ export default function AddTips() {
   const handleEditTipValues = () => {
     const amount = Number.parseFloat(editTipAmount.replace(",", "."))
     if (!isNaN(amount) && amount > 0) {
-      setTipValues(prev => ({ ...prev, [selectedTipButton]: amount }))
+      // Round to 2 decimal places to avoid floating point precision issues
+      const roundedAmount = Math.round(amount * 100) / 100
+      setTipValues(prev => ({ ...prev, [selectedTipButton]: roundedAmount }))
       setEditTipAmount("")
       setShowEditTipDialog(false)
     }
@@ -106,7 +112,11 @@ export default function AddTips() {
     // Only allow numbers, comma, and backspace
     const regex = /^[0-9,]*$/
     if (regex.test(value) || value === "") {
-      setter(value)
+      // Limit to 2 decimal places
+      const parts = value.split(",")
+      if (parts.length <= 2 && (parts[1]?.length || 0) <= 2) {
+        setter(value)
+      }
     }
   }
 

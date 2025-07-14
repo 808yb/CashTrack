@@ -59,6 +59,19 @@ export default function Dashboard() {
       .slice(0, 5)
   }
 
+  const getCurrentMonthTips = () => {
+    const currentDate = new Date()
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth() + 1 // getMonth() returns 0-11
+    
+    const monthTips = tips.filter(tip => {
+      const tipDate = new Date(tip.date)
+      return tipDate.getFullYear() === currentYear && tipDate.getMonth() + 1 === currentMonth
+    })
+    
+    return monthTips.reduce((sum, tip) => sum + tip.amount, 0)
+  }
+
   const getStats = () => {
     const shiftsByDate = tips.reduce(
       (acc, tip) => {
@@ -75,7 +88,12 @@ export default function Dashboard() {
     const totalAmount = Object.values(shiftsByDate).reduce((sum, amount) => sum + amount, 0)
     const average = shifts > 0 ? totalAmount / shifts : 0
 
-    return { shifts, average }
+    // Find highest tip of today
+    const today = getTodayKey()
+    const todayTips = tips.filter((tip) => tip.date === today)
+    const highestTipToday = todayTips.length > 0 ? Math.max(...todayTips.map(tip => tip.amount)) : 0
+
+    return { shifts, average, highestTipToday }
   }
 
   const recentShifts = getRecentShifts()
@@ -116,22 +134,22 @@ export default function Dashboard() {
             <h3 className="text-xl font-bold text-black mb-2">Statistik</h3>
             <div className="text-black">
               <div>Schichten: {stats.shifts}</div>
-              <div>Trinkgeld im Durchschnitt: {formatCurrency(stats.average)}</div>
+              <div>Höchste Trinkgeld von heute: {formatCurrency(stats.highestTipToday)}</div>
             </div>
           </div>
 
           {/* Recent Shifts */}
           <div>
-            <h3 className="text-xl font-bold text-black mb-4">Letzte Schichten</h3>
+            <h3 className="text-xl font-bold text-black mb-4">Trinkgeld im Monat</h3>
             <div className="space-y-3">
-              {recentShifts.map(([date, amount]) => (
-                <div key={date} className="flex justify-between items-center">
-                  <div className="text-black">{formatDate(new Date(date))}</div>
-                  <div className="text-xl font-bold text-black">{formatCurrency(amount)}</div>
+              <div className="flex justify-between items-center">
+                <div className="text-black">
+                  {new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
                 </div>
-              ))}
-              {recentShifts.length === 0 && (
-                <div className="text-gray-500 text-center py-4">Noch keine Schichten aufgezeichnet</div>
+                <div className="text-xl font-bold text-black">{formatCurrency(getCurrentMonthTips())}</div>
+              </div>
+              {getCurrentMonthTips() === 0 && (
+                <div className="text-gray-500 text-center py-4">Noch keine Einträge in diesem Monat</div>
               )}
             </div>
           </div>
