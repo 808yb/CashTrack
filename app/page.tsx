@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Calendar, Plus, User, Home } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, formatDate, getTodayKey, getStoredTips } from "@/lib/utils"
+import { useSwipeable } from 'react-swipeable'
 
 interface TipEntry {
   date: string
@@ -14,6 +15,11 @@ interface TipEntry {
 export default function Dashboard() {
   const [tips, setTips] = useState<TipEntry[]>([])
   const [todayTotal, setTodayTotal] = useState(0)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return { year: now.getFullYear(), month: now.getMonth() }
+  })
+  const [showSwipeLabel, setShowSwipeLabel] = useState(true)
 
   useEffect(() => {
     const loadTips = () => {
@@ -59,18 +65,18 @@ export default function Dashboard() {
       .slice(0, 5)
   }
 
-  const getCurrentMonthTips = () => {
-    const currentDate = new Date()
-    const currentYear = currentDate.getFullYear()
-    const currentMonth = currentDate.getMonth() + 1 // getMonth() returns 0-11
-    
+  const getMonthTips = (year: number, month: number) => {
+    // month: 0-based (0=Jan, 11=Dec)
     const monthTips = tips.filter(tip => {
       const tipDate = new Date(tip.date)
-      return tipDate.getFullYear() === currentYear && tipDate.getMonth() + 1 === currentMonth
+      return tipDate.getFullYear() === year && tipDate.getMonth() === month
     })
-    
     return monthTips.reduce((sum, tip) => sum + tip.amount, 0)
   }
+
+  const monthNames = [
+    "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"
+  ]
 
   const getStats = () => {
     const shiftsByDate = tips.reduce(
@@ -99,6 +105,19 @@ export default function Dashboard() {
   const recentShifts = getRecentShifts()
   const stats = getStats()
 
+  // Count shifts for the selected month only
+  const getMonthShifts = (year: number, month: number) => {
+    const shiftsByDate = tips.reduce((acc, tip) => {
+      const tipDate = new Date(tip.date)
+      if (tipDate.getFullYear() === year && tipDate.getMonth() === month) {
+        if (!acc[tip.date]) acc[tip.date] = 0
+        acc[tip.date] += tip.amount
+      }
+      return acc
+    }, {} as Record<string, number>)
+    return Object.keys(shiftsByDate).length
+  }
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-200 relative">
       {/* Header */}
@@ -115,7 +134,6 @@ export default function Dashboard() {
       <div className="px-4 pb-20">
         <div className="bg-white rounded-2xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-black mb-4">Dashboard</h2>
-
           {/* Today's Tips */}
           <div className="bg-gray-200 rounded-xl p-4 mb-6">
             <div className="flex justify-between items-center">
@@ -129,29 +147,68 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Monthly Tips Summary (Swipeable) */}
+          <div
+            className="bg-gray-200 rounded-2xl px-4 py-3 mb-2 flex flex-col items-center select-none"
+            {...useSwipeable({
+              onSwipedLeft: () => {
+                // Only allow swiping left if the next month is not in the future
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                let nextMonth = selectedMonth.month + 1;
+                let nextYear = selectedMonth.year;
+                if (nextMonth > 11) { nextMonth = 0; nextYear++; }
+                if (
+                  nextYear < currentYear ||
+                  (nextYear === currentYear && nextMonth <= currentMonth)
+                ) {
+                  setSelectedMonth(prev => {
+                    let month = prev.month + 1;
+                    let year = prev.year;
+                    if (month > 11) { month = 0; year++; }
+                    return { year, month };
+                  });
+                  setShowSwipeLabel(false);
+                }
+              },
+              onSwipedRight: () => {
+                setSelectedMonth(prev => {
+                  let month = prev.month - 1;
+                  let year = prev.year;
+                  if (month < 0) { month = 11; year--; }
+                  return { year, month };
+                });
+                setShowSwipeLabel(false);
+              },
+              trackMouse: true,
+            })}
+          >
+            <span className="flex-1 text-center text-lg font-medium mb-1">
+              Trinkgeld im {monthNames[selectedMonth.month]} {selectedMonth.year}
+            </span>
+            <div className="text-3xl font-bold text-center">
+              {formatCurrency(getMonthTips(selectedMonth.year, selectedMonth.month))}
+            </div>
+          </div>
+          {showSwipeLabel && (
+            <div className="text-xs text-gray-500 mb-4 text-center">Nach links wischen, um den Vormonat zu sehen</div>
+          )}
+
           {/* Statistics */}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-black mb-2">Statistik</h3>
             <div className="text-black">
-              <div>Schichten: {stats.shifts}</div>
+              <div>Schichten: {getMonthShifts(selectedMonth.year, selectedMonth.month)}</div>
               <div>Höchste Trinkgeld von heute: {formatCurrency(stats.highestTipToday)}</div>
             </div>
           </div>
 
-          {/* Recent Shifts */}
+          {/* Monthly Tips with Month Selector */}
           <div>
-            <h3 className="text-xl font-bold text-black mb-4">Trinkgeld im Monat</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div className="text-black">
-                  {new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
-                </div>
-                <div className="text-xl font-bold text-black">{formatCurrency(getCurrentMonthTips())}</div>
-              </div>
-              {getCurrentMonthTips() === 0 && (
-                <div className="text-gray-500 text-center py-4">Noch keine Einträge in diesem Monat</div>
-              )}
-            </div>
+            {getMonthTips(selectedMonth.year, selectedMonth.month) === 0 && (
+              <div className="text-gray-500 text-center py-4">Noch keine Einträge in diesem Monat</div>
+            )}
           </div>
         </div>
       </div>

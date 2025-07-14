@@ -284,7 +284,7 @@ export default function AddTips() {
               >
                 Nein
               </Button>
-              <Button className="flex-1 bg-gray-200 text-black hover:bg-gray-300" onClick={handleEndShift}>
+              <Button variant="default" className="flex-1" onClick={handleEndShift}>
                 Ja
               </Button>
             </div>

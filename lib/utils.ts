@@ -150,3 +150,24 @@ export function updateTodayTips(newAmount: number): void {
     saveTip(newAmount)
   }
 }
+
+// Update the tip for a specific date (overwrite or create consolidated entry)
+export function updateTipForDate(dateKey: string, amount: number, note?: string): void {
+  if (typeof window === "undefined") return
+
+  let tips = getStoredTips()
+  // Remove any existing entries for the date
+  tips = tips.filter((tip) => tip.date !== dateKey)
+
+  // Add the new consolidated entry if amount > 0 or there's a note
+  if (amount > 0 || (note && note.trim() !== "")) {
+    const entry = {
+      date: dateKey,
+      amount,
+      note: note?.trim() || undefined,
+      timestamp: Date.now(),
+    }
+    tips.push(entry)
+  }
+  localStorage.setItem("cashtrack-tips", JSON.stringify(tips))
+}

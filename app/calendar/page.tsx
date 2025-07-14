@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Calendar, Plus, User, ChevronLeft, ChevronRight, Home } from "lucide-react"
 import Link from "next/link"
-import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift } from "@/lib/utils"
+import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift, updateTipForDate } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -119,8 +119,8 @@ export default function CalendarView() {
       if (!isNaN(amount) && amount >= 0) {
         // Round to 2 decimal places to avoid floating point precision issues
         const roundedAmount = Math.round(amount * 100) / 100
-        // Use endShift to consolidate and update the selected date's tips
-        endShift(roundedAmount, selectedDateNote)
+        // Update the tip for the selected date
+        updateTipForDate(selectedDate, roundedAmount, selectedDateNote)
         setEditAmount("")
         setShowEditDialog(false)
         
