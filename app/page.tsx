@@ -192,7 +192,7 @@ export default function Dashboard() {
             </div>
           </div>
           {showSwipeLabel && (
-            <div className="text-xs text-gray-500 mb-4 text-center">Nach links wischen, um den Vormonat zu sehen</div>
+            <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
           )}
 
           {/* Statistics */}
