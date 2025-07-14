@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import useEmblaCarousel from 'embla-carousel-react'
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Calendar, Plus, User, ChevronLeft, ChevronRight, Home } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift, updateTipForDate } from "@/lib/utils"
@@ -23,6 +24,68 @@ export default function CalendarView() {
   const [selectedDateNote, setSelectedDateNote] = useState<string>("")
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editAmount, setEditAmount] = useState("")
+  const [showSwipeLabel, setShowSwipeLabel] = useState(true)
+
+  // Month carousel state
+  const minYear = 2022
+  const [now, setNow] = useState<Date | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number } | null>(null)
+  const [monthSlides, setMonthSlides] = useState<{ year: number; month: number }[]>([])
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: 'center',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+    dragFree: false,
+  })
+  const didInitialScroll = useRef(false)
+  useEffect(() => {
+    const date = new Date()
+    setNow(date)
+    const currentMonth = date.getMonth()
+    const currentYear = date.getFullYear()
+    const maxIdx = (currentYear - minYear) * 12 + currentMonth
+    const slides: { year: number; month: number }[] = []
+    for (let i = 0; i <= maxIdx; i++) {
+      const year = minYear + Math.floor(i / 12)
+      const month = i % 12
+      slides.push({ year, month })
+    }
+    setMonthSlides(slides)
+    setSelectedMonth({ year: currentYear, month: currentMonth })
+  }, [])
+  // Find the index for the selected month
+  const selectedIndex = selectedMonth ? (selectedMonth.year - minYear) * 12 + selectedMonth.month : 0
+  // When selectedMonth changes, scroll embla to the correct slide
+  useEffect(() => {
+    if (emblaApi && monthSlides.length > 0 && selectedIndex >= 0 && selectedIndex < monthSlides.length) {
+      if (!didInitialScroll.current) {
+        emblaApi.scrollTo(selectedIndex, true) // jump, no animation
+        didInitialScroll.current = true
+      } else {
+        emblaApi.scrollTo(selectedIndex)
+      }
+    }
+  }, [emblaApi, selectedIndex, monthSlides.length])
+  // When embla slide changes, update selectedMonth
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return
+    const idx = emblaApi.selectedScrollSnap()
+    const slide = monthSlides[idx]
+    if (slide && (!selectedMonth || slide.year !== selectedMonth.year || slide.month !== selectedMonth.month)) {
+      setSelectedMonth({ year: slide.year, month: slide.month })
+      setShowSwipeLabel(false)
+    }
+  }, [emblaApi, monthSlides, selectedMonth])
+  useEffect(() => {
+    if (!emblaApi) return
+    emblaApi.on('select', onSelect)
+    return () => {
+      emblaApi.off('select', onSelect)
+    }
+  }, [emblaApi, onSelect])
+
+  // Use selectedMonth for calendar grid
+  const calendarDate = selectedMonth ? new Date(selectedMonth.year, selectedMonth.month, 1) : currentDate
 
   useEffect(() => {
     const loadTips = () => {
@@ -145,8 +208,8 @@ export default function CalendarView() {
   }
 
   const renderCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate)
-    const firstDay = getFirstDayOfMonth(currentDate) // 0 for Monday, 1 for Tuesday, etc.
+    const daysInMonth = getDaysInMonth(calendarDate)
+    const firstDay = getFirstDayOfMonth(calendarDate) // 0 for Monday, 1 for Tuesday, etc.
     const days = []
 
     // Add empty cells for days before the first day of the month
@@ -156,7 +219,7 @@ export default function CalendarView() {
 
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+      const date = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day)
       const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
         .getDate()
         .toString()
@@ -221,22 +284,37 @@ export default function CalendarView() {
 
       {/* Main Content */}
       <div className="px-4 pb-20">
+        {/* Month Carousel */}
+        {now && monthSlides.length > 0 && (
+          <>
+            <div className="mb-4">
+              <div ref={emblaRef} className="overflow-hidden">
+                <div className="flex" style={{ userSelect: 'none' }}>
+                  {monthSlides.map((slide, idx) => (
+                    <div
+                      key={slide.year + '-' + slide.month}
+                      className="flex-shrink-0 w-full px-2"
+                      style={{ minWidth: '100%', maxWidth: '100%' }}
+                    >
+                      <div className="bg-gray-200 rounded-2xl px-4 py-3 flex flex-col items-center">
+                        <span className="flex-1 text-center text-lg font-medium mb-1">
+                          {monthNames[slide.month]} {slide.year}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {showSwipeLabel && (
+              <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
+            )}
+          </>
+        )}
         {/* Calendar */}
         <div className="bg-white rounded-2xl p-6">
           {/* Month Navigation */}
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => navigateMonth("prev")} className="p-2">
-              <ChevronLeft className="w-5 h-5 text-black" />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-medium text-black">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </span>
-            </div>
-            <button onClick={() => navigateMonth("next")} className="p-2">
-              <ChevronRight className="w-5 h-5 text-black" />
-            </button>
-          </div>
+          {/* Month navigation is now handled by the carousel above */}
 
           {/* Week Days Header */}
           <div className="grid grid-cols-7 gap-1 mb-2">

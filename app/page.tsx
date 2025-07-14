@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import useEmblaCarousel from 'embla-carousel-react'
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Calendar, Plus, User, Home } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, formatDate, getTodayKey, getStoredTips } from "@/lib/utils"
@@ -20,6 +21,14 @@ export default function Dashboard() {
     return { year: now.getFullYear(), month: now.getMonth() }
   })
   const [showSwipeLabel, setShowSwipeLabel] = useState(true)
+
+  // For embla carousel
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: 'center',
+    containScroll: 'trimSnaps',
+    skipSnaps: false,
+    dragFree: false,
+  })
 
   useEffect(() => {
     const loadTips = () => {
@@ -118,6 +127,58 @@ export default function Dashboard() {
     return Object.keys(shiftsByDate).length
   }
 
+  // For embla carousel
+  const [now, setNow] = useState<Date | null>(null)
+  const minYear = 2022
+  const minMonth = 0
+  const [maxIndex, setMaxIndex] = useState<number>(0)
+  const [monthSlides, setMonthSlides] = useState<{ year: number; month: number }[]>([])
+  useEffect(() => {
+    const date = new Date()
+    setNow(date)
+    const currentMonth = date.getMonth()
+    const currentYear = date.getFullYear()
+    const maxIdx = (currentYear - minYear) * 12 + currentMonth
+    setMaxIndex(maxIdx)
+    const slides: { year: number; month: number }[] = []
+    for (let i = 0; i <= maxIdx; i++) {
+      const year = minYear + Math.floor(i / 12)
+      const month = i % 12
+      slides.push({ year, month })
+    }
+    setMonthSlides(slides)
+  }, [])
+  const selectedIndex = (selectedMonth.year - minYear) * 12 + selectedMonth.month
+  // When selectedMonth changes, scroll embla to the correct slide
+  const didInitialScroll = useRef(false)
+  useEffect(() => {
+    if (emblaApi && monthSlides.length > 0 && selectedIndex >= 0 && selectedIndex < monthSlides.length) {
+      if (!didInitialScroll.current) {
+        emblaApi.scrollTo(selectedIndex, true) // jump, no animation
+        didInitialScroll.current = true
+      } else {
+        emblaApi.scrollTo(selectedIndex)
+      }
+    }
+  }, [emblaApi, selectedIndex, monthSlides.length])
+  // When embla slide changes, update selectedMonth
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return
+    const idx = emblaApi.selectedScrollSnap()
+    const slide = monthSlides[idx]
+    if (slide && (slide.year !== selectedMonth.year || slide.month !== selectedMonth.month)) {
+      setSelectedMonth({ year: slide.year, month: slide.month })
+      setShowSwipeLabel(false)
+    }
+  }, [emblaApi, monthSlides, selectedMonth])
+  useEffect(() => {
+    if (!emblaApi) return
+    emblaApi.on('select', onSelect)
+    return () => {
+      emblaApi.off('select', onSelect)
+    }
+  }, [emblaApi, onSelect])
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-200 relative">
       {/* Header */}
@@ -147,52 +208,35 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Monthly Tips Summary (Swipeable) */}
-          <div
-            className="bg-gray-200 rounded-2xl px-4 py-3 mb-2 flex flex-col items-center select-none"
-            {...useSwipeable({
-              onSwipedLeft: () => {
-                // Only allow swiping left if the next month is not in the future
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                let nextMonth = selectedMonth.month + 1;
-                let nextYear = selectedMonth.year;
-                if (nextMonth > 11) { nextMonth = 0; nextYear++; }
-                if (
-                  nextYear < currentYear ||
-                  (nextYear === currentYear && nextMonth <= currentMonth)
-                ) {
-                  setSelectedMonth(prev => {
-                    let month = prev.month + 1;
-                    let year = prev.year;
-                    if (month > 11) { month = 0; year++; }
-                    return { year, month };
-                  });
-                  setShowSwipeLabel(false);
-                }
-              },
-              onSwipedRight: () => {
-                setSelectedMonth(prev => {
-                  let month = prev.month - 1;
-                  let year = prev.year;
-                  if (month < 0) { month = 11; year--; }
-                  return { year, month };
-                });
-                setShowSwipeLabel(false);
-              },
-              trackMouse: true,
-            })}
-          >
-            <span className="flex-1 text-center text-lg font-medium mb-1">
-              Trinkgeld im {monthNames[selectedMonth.month]} {selectedMonth.year}
-            </span>
-            <div className="text-3xl font-bold text-center">
-              {formatCurrency(getMonthTips(selectedMonth.year, selectedMonth.month))}
-            </div>
-          </div>
-          {showSwipeLabel && (
-            <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
+          {/* Monthly Tips Summary (Animated Carousel) */}
+          {now && monthSlides.length > 0 && (
+            <>
+              <div className="mb-2">
+                <div ref={emblaRef} className="overflow-hidden">
+                  <div className="flex" style={{ userSelect: 'none' }}>
+                    {monthSlides.map((slide, idx) => (
+                      <div
+                        key={slide.year + '-' + slide.month}
+                        className="flex-shrink-0 w-full px-2"
+                        style={{ minWidth: '100%', maxWidth: '100%' }}
+                      >
+                        <div className="bg-gray-200 rounded-2xl px-4 py-3 flex flex-col items-center">
+                          <span className="flex-1 text-center text-lg font-medium mb-1">
+                            Trinkgeld im {monthNames[slide.month]} {slide.year}
+                          </span>
+                          <div className="text-3xl font-bold text-center">
+                            {formatCurrency(getMonthTips(slide.year, slide.month))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {showSwipeLabel && (
+                <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
+              )}
+            </>
           )}
 
           {/* Statistics */}
