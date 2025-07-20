@@ -425,6 +425,14 @@ export default function CalendarView() {
               </button>
             </div>
 
+            {/* Show tip amount for selected day */}
+            <div className="mb-4">
+              <span className="block text-sm text-gray-600">Trinkgeld:</span>
+              <span className="text-2xl font-bold text-black">
+                {formatCurrency(getDaySummary(selectedDate).amount || 0)}
+              </span>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Notiz:</label>
@@ -448,14 +456,6 @@ export default function CalendarView() {
                       className="text-xs"
                     >
                       Tags verwalten
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCustomTagDialog(true)}
-                      className="text-xs"
-                    >
-                      + Neuer Tag
                     </Button>
                   </div>
                 </div>
@@ -482,16 +482,16 @@ export default function CalendarView() {
                 <Button
                   variant="outline"
                   className="flex-1 bg-gray-200 text-black"
-                  onClick={handleNoteSave}
-                >
-                  Speichern
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-gray-200 text-black"
                   onClick={() => setShowEditDialog(true)}
                 >
                   Betrag ändern
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleNoteSave}
+                >
+                  Speichern
                 </Button>
               </div>
             </div>
@@ -551,6 +551,17 @@ export default function CalendarView() {
                   />
                 ))}
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setShowManageTagsDialog(false);
+                  setShowCustomTagDialog(true);
+                }}
+              >
+                + Neuer Tag
+              </Button>
 
               <Button
                 variant="outline"

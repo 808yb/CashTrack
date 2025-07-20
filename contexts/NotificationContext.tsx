@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { getTodayKey, getStoredTips } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import { toast } from 'sonner'
 
 interface Notification {
   id: string
@@ -56,17 +56,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications(prev => [newNotification, ...prev])
     
     // Show toast for all notifications (like push notifications)
-    toast(notification.message, {
-      duration: 4000,
+    toast(notification.title, {
+      description: notification.message,
       icon: notification.icon,
-      style: {
-        background: '#363636',
-        color: '#fff',
-        borderRadius: '12px',
-        padding: '16px',
-        fontSize: '14px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      },
+      duration: 4000,
     })
   }
 
@@ -120,15 +113,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const weeklyData = getWeeklyTipsData(tips)
       const weeklyTotal = weeklyData.reduce((sum, day) => sum + day.tips, 0)
       const goalAmount = Number(localStorage.getItem("cashtrack-goal") || "100")
-      
+      const nowTimestamp = Date.now()
+      const lastTipNotification = localStorage.getItem("cashtrack-last-tip-notification")
+      const TIP_NOTIFICATION_DELAY = 6 * 60 * 60 * 1000 // 6 hours
       if (weeklyTotal > 0 && weeklyTotal < goalAmount * 0.5) {
-        addNotification({
-          type: 'tip',
-          title: 'Wöchentliches Ziel',
-          message: '🎯 Du bist auf gutem Weg! Halte durch!',
-          icon: '📈',
-          priority: 'low'
-        })
+        if (!lastTipNotification || nowTimestamp - Number(lastTipNotification) > TIP_NOTIFICATION_DELAY) {
+          addNotification({
+            type: 'tip',
+            title: 'Wöchentliches Ziel',
+            message: '🎯 Du bist auf gutem Weg! Halte durch!',
+            icon: '📈',
+            priority: 'low'
+          })
+          localStorage.setItem("cashtrack-last-tip-notification", nowTimestamp.toString())
+        }
       }
     }
     

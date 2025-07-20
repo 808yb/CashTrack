@@ -6,7 +6,7 @@ import "./globals.css"
 import Head from 'next/head'
 import { ConfettiProvider } from "@/contexts/ConfettiContext"
 import { NotificationProvider } from "@/contexts/NotificationContext"
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from '@/components/ui/sonner'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -57,117 +57,9 @@ export default function RootLayout({
             <Analytics />
             
             {/* Global Toast Notifications with Swipe Support */}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  fontSize: '14px',
-                  maxWidth: '90vw',
-                  userSelect: 'none',
-                  touchAction: 'pan-y',
-                },
-                className: 'swipeable-toast',
-              }}
-            />
+            <Toaster position="top-center" />
           </NotificationProvider>
         </ConfettiProvider>
-        
-        {/* Swipe-to-dismiss script for toast notifications */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                function initSwipeableToasts() {
-                  const toasts = document.querySelectorAll('.swipeable-toast');
-                  
-                  toasts.forEach(toast => {
-                    if (toast.dataset.swipeInitialized) return;
-                    toast.dataset.swipeInitialized = 'true';
-                    
-                    let startX = 0;
-                    let currentX = 0;
-                    let isDragging = false;
-                    
-                    function handleTouchStart(e) {
-                      startX = e.touches[0].clientX;
-                      isDragging = true;
-                      toast.style.transition = 'none';
-                    }
-                    
-                    function handleTouchMove(e) {
-                      if (!isDragging) return;
-                      e.preventDefault();
-                      
-                      currentX = e.touches[0].clientX;
-                      const diffX = currentX - startX;
-                      
-                      if (diffX < 0) { // Only allow left swipe
-                        toast.style.transform = \`translateX(\${diffX}px)\`;
-                      }
-                    }
-                    
-                    function handleTouchEnd() {
-                      if (!isDragging) return;
-                      isDragging = false;
-                      
-                      const diffX = currentX - startX;
-                      
-                      if (diffX < -50) { // Swipe threshold
-                        toast.classList.add('swiped');
-                        setTimeout(() => {
-                          const closeButton = toast.querySelector('[data-testid="toast-close"]');
-                          if (closeButton) {
-                            closeButton.click();
-                          }
-                        }, 300);
-                      } else {
-                        toast.style.transform = 'translateX(0)';
-                        toast.style.transition = 'transform 0.3s ease-out';
-                      }
-                    }
-                    
-                    toast.addEventListener('touchstart', handleTouchStart, { passive: false });
-                    toast.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    toast.addEventListener('touchend', handleTouchEnd);
-                  });
-                }
-                
-                // Initialize on load
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', initSwipeableToasts);
-                } else {
-                  initSwipeableToasts();
-                }
-                
-                // Watch for new toasts
-                const observer = new MutationObserver((mutations) => {
-                  mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList') {
-                      mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                          const toasts = node.querySelectorAll ? node.querySelectorAll('.swipeable-toast') : [];
-                          if (toasts.length > 0) {
-                            setTimeout(initSwipeableToasts, 100);
-                          }
-                        }
-                      });
-                    }
-                  });
-                });
-                
-                observer.observe(document.body, {
-                  childList: true,
-                  subtree: true
-                });
-              })();
-            `
-          }}
-        />
       </body>
     </html>
   )

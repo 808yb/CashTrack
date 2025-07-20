@@ -43,12 +43,13 @@ const toastVariants = cva(
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-    VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
+    VariantProps<typeof toastVariants> & { swipeDirection?: 'left' | 'right' | 'up' | 'down' }
+>(({ className, variant, swipeDirection, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
+      swipeDirection={swipeDirection}
       {...props}
     />
   )
@@ -112,7 +113,7 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast> & { swipeDirection?: 'left' | 'right' | 'up' | 'down' };
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 

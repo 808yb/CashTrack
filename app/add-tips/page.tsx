@@ -371,14 +371,6 @@ export default function AddTips() {
                   >
                     Tags verwalten
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowCustomTagDialog(true)}
-                    className="text-xs"
-                  >
-                    + Neuer Tag
-                  </Button>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -481,6 +473,17 @@ export default function AddTips() {
                 />
               ))}
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowManageTagsDialog(false);
+                setShowCustomTagDialog(true);
+              }}
+            >
+              + Neuer Tag
+            </Button>
 
             <Button
               variant="outline"
