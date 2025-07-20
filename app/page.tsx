@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { useConfetti } from "@/contexts/ConfettiContext"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 import toast from 'react-hot-toast'
@@ -35,7 +34,6 @@ export default function Dashboard() {
   const [newGoalAmount, setNewGoalAmount] = useState("")
   const [isWeeklyGoal, setIsWeeklyGoal] = useState(true)
   const [goalReached, setGoalReached] = useState(false)
-  const { showConfetti } = useConfetti()
   const { addNotification } = useNotifications()
 
   // For embla carousel
@@ -108,7 +106,6 @@ export default function Dashboard() {
     
     if (hasReachedGoal && !goalReached) {
       setGoalReached(true)
-      showConfetti()
       
       // Add achievement notification
       addNotification({
@@ -121,7 +118,7 @@ export default function Dashboard() {
     } else if (!hasReachedGoal && goalReached) {
       setGoalReached(false)
     }
-  }, [tips, goalAmount, goalReached, showConfetti, addNotification, isWeeklyGoal, goalAmount]) // Removed isWeeklyGoal from dependencies
+  }, [tips, goalAmount, goalReached, addNotification, isWeeklyGoal, goalAmount]) // Removed isWeeklyGoal from dependencies
 
   // Reset weekly goal when new week starts
   useEffect(() => {

@@ -12,13 +12,11 @@ import { Textarea } from "@/components/ui/textarea"
 import Coin1Icon from "@/ButtonIcons/Coin1Icon"
 import Coin2Icon from "@/ButtonIcons/Coin2Icon"
 import Coin5Icon from "@/ButtonIcons/CustomCoinsIcon"
-import { useConfetti } from "@/contexts/ConfettiContext"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 
 export default function AddTips() {
   const router = useRouter()
-  const { showConfetti } = useConfetti()
   const { addNotification } = useNotifications()
   const [todayTotal, setTodayTotal] = useState(0)
   const [showCustomInput, setShowCustomInput] = useState(false)
@@ -90,7 +88,6 @@ export default function AddTips() {
     const milestone = Math.floor(newTotal / 10) * 10
     const previousMilestone = Math.floor(todayTotal / 10) * 10
     if (milestone > previousMilestone && milestone > 0) {
-      showConfetti()
       
       // Add milestone notification
       addNotification({

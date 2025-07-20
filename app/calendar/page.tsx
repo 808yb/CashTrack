@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { useConfetti } from "@/contexts/ConfettiContext"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 
@@ -22,7 +21,6 @@ interface TipEntry {
 }
 
 export default function CalendarView() {
-  const { showConfetti } = useConfetti()
   const { addNotification } = useNotifications()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tips, setTips] = useState<TipEntry[]>([])
@@ -282,7 +280,6 @@ export default function CalendarView() {
   const handleEditTag = (tagId: string, newName: string, newColor: string) => {
     updateTag(tagId, { name: newName, color: newColor })
     setTags(getStoredTags())
-    showConfetti() // Celebrate successful tag edit
   }
 
   const renderCalendarDays = () => {

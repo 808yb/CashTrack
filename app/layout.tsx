@@ -4,7 +4,6 @@ import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
 import Head from 'next/head'
-import { ConfettiProvider } from "@/contexts/ConfettiContext"
 import { NotificationProvider } from "@/contexts/NotificationContext"
 import { Toaster } from '@/components/ui/sonner'
 
@@ -51,15 +50,11 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </Head>
       <body className={inter.className}>
-        <ConfettiProvider>
-          <NotificationProvider>
-            <div className="min-h-screen bg-gray-200">{children}</div>
-            <Analytics />
-            
-            {/* Global Toast Notifications with Swipe Support */}
-            <Toaster position="top-center" />
-          </NotificationProvider>
-        </ConfettiProvider>
+        <NotificationProvider>
+          <div className="min-h-screen bg-gray-200">{children}</div>
+          <Analytics />
+          <Toaster position="top-center" />
+        </NotificationProvider>
       </body>
     </html>
   )
