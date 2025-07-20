@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 import toast from 'react-hot-toast'
+import Fireworks from "@/components/ui/Fireworks"
 
 interface TipEntry {
   date: string
@@ -35,6 +36,9 @@ export default function Dashboard() {
   const [isWeeklyGoal, setIsWeeklyGoal] = useState(true)
   const [goalReached, setGoalReached] = useState(false)
   const { addNotification } = useNotifications()
+  const [shouldFireworks, setShouldFireworks] = useState(false)
+  const [goalName, setGoalName] = useState("")
+  const [newGoalName, setNewGoalName] = useState("")
 
   // For embla carousel
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -84,11 +88,15 @@ export default function Dashboard() {
     if (typeof window !== "undefined") {
       const storedGoal = localStorage.getItem("cashtrack-goal")
       const storedGoalType = localStorage.getItem("cashtrack-goal-type")
+      const storedGoalName = localStorage.getItem("cashtrack-goal-name")
       if (storedGoal) {
         setGoalAmount(Number(storedGoal))
       }
       if (storedGoalType) {
         setIsWeeklyGoal(storedGoalType === "weekly")
+      }
+      if (storedGoalName) {
+        setGoalName(storedGoalName)
       }
       
       // Initialize weekly reset tracking if not exists
@@ -371,8 +379,69 @@ export default function Dashboard() {
     localStorage.setItem("cashtrack-goal-type", newIsWeekly ? "weekly" : "global")
   }, [])
 
+  // Mapping from short to full weekday names (German)
+  const fullWeekdayNames: Record<string, string> = {
+    Mo: "Montag",
+    Di: "Dienstag",
+    Mi: "Mittwoch",
+    Do: "Donnerstag",
+    Fr: "Freitag",
+    Sa: "Samstag",
+    So: "Sonntag",
+  }
+
+  // Custom Tooltip content for BarChart
+  const CustomBarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const shortDay = label;
+      const fullDay = fullWeekdayNames[shortDay] || shortDay;
+      return (
+        <div style={{ background: '#F3F4F6', borderRadius: 8, padding: 12, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>{fullDay}</div>
+          <div style={{ fontSize: 16 }}>
+            Trinkgeld: <span style={{ fontWeight: 700 }}>{payload[0].value}€</span>
+          </div>
+        </div>
+      )
+    }
+    return null;
+  }
+
+  // Track last goal/achievement for fireworks
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    // Check if goal is reached
+    const progressData = getProgressData()
+    const hasReachedGoal = progressData.progressPercentage >= 100
+    const goalKey = isWeeklyGoal
+      ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
+      : `cashtrack-fireworks-global-goal-${goalAmount}`
+    const lastFired = localStorage.getItem("cashtrack-fireworks-last")
+    if (hasReachedGoal && lastFired !== goalKey) {
+      setShouldFireworks(true)
+      localStorage.setItem("cashtrack-fireworks-last", goalKey)
+    } else {
+      setShouldFireworks(false)
+    }
+  }, [tips, goalAmount, isWeeklyGoal])
+
+  // Reset fireworks when goal changes or week changes
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    // Clear last fired if goal or week changes
+    const goalKey = isWeeklyGoal
+      ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
+      : `cashtrack-fireworks-global-goal-${goalAmount}`
+    const lastFired = localStorage.getItem("cashtrack-fireworks-last")
+    if (lastFired && lastFired !== goalKey) {
+      localStorage.removeItem("cashtrack-fireworks-last")
+    }
+  }, [goalAmount, isWeeklyGoal])
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-200 relative">
+      {/* Fireworks celebration */}
+      <Fireworks fire={shouldFireworks} />
       {/* Header */}
       <div className="flex justify-between items-center p-4 pt-8">
         <h1 className="text-2xl font-bold text-black">CashTrack</h1>
@@ -394,7 +463,7 @@ export default function Dashboard() {
           <div className="bg-gray-200 rounded-xl p-4 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-lg font-medium text-black">Trinkgeld</div>
+                <div className="text-lg font-medium text-black">Trinkgeld heute</div>
                 <div className="text-3xl font-bold text-black">{formatCurrency(todayTotal)}</div>
               </div>
               <div className="text-right">
@@ -456,8 +525,8 @@ export default function Dashboard() {
                     tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
                   <Tooltip 
-                    formatter={(value) => [`${value}€`, 'Trinkgeld']}
-                    labelFormatter={(label) => `${label}`}
+                    content={CustomBarTooltip}
+                    // formatter and labelFormatter are not needed with custom content
                     contentStyle={{
                       backgroundColor: '#F3F4F6',
                       border: 'none',
@@ -499,6 +568,9 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600">
                     {isWeeklyGoal ? "Wöchentliches Ziel" : "Globales Ziel"}
+                    {goalName && (
+                      <span className="ml-2 text-xs text-gray-500"> {goalName}</span>
+                    )}
                   </span>
                   <span className="text-sm font-bold text-black">{formatCurrency(goalAmount)}</span>
                 </div>
@@ -542,6 +614,7 @@ export default function Dashboard() {
               <button
                 onClick={() => {
                   setNewGoalAmount(goalAmount.toString().replace(".", ","))
+                  setNewGoalName(goalName)
                   setShowGoalDialog(true)
                 }}
                 className="w-full mt-4 bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
@@ -570,6 +643,13 @@ export default function Dashboard() {
                   onChange={(e) => handleNumberInput(e.target.value, setNewGoalAmount)}
                   className="text-center text-xl"
                 />
+                <Input
+                  type="text"
+                  placeholder="(optional) Wofür sparst du? z.B. Urlaub"
+                  value={newGoalName}
+                  onChange={e => setNewGoalName(e.target.value)}
+                  className="text-center text-base"
+                />
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowGoalDialog(false)}>
                     Abbrechen
@@ -581,9 +661,12 @@ export default function Dashboard() {
                       if (!isNaN(amount) && amount > 0) {
                         const roundedAmount = Math.round(amount * 100) / 100
                         setGoalAmount(roundedAmount)
+                        setGoalName(newGoalName)
                         // Save to localStorage
                         localStorage.setItem("cashtrack-goal", roundedAmount.toString())
+                        localStorage.setItem("cashtrack-goal-name", newGoalName)
                         setNewGoalAmount("")
+                        setNewGoalName("")
                         setShowGoalDialog(false)
                       }
                     }}

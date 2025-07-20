@@ -11,7 +11,6 @@ import { de } from 'date-fns/locale'
 export default function NotificationBell() {
   const { notifications, markAsRead, clearAll } = useNotifications()
   const [showNotifications, setShowNotifications] = useState(false)
-  const [swipedNotifications, setSwipedNotifications] = useState<Set<string>>(new Set())
   
   const unreadCount = notifications.filter(n => !n.read).length
   
@@ -32,19 +31,6 @@ export default function NotificationBell() {
       case 'motivation': return '💪'
       default: return '📢'
     }
-  }
-
-  const handleSwipe = (notificationId: string) => {
-    setSwipedNotifications(prev => new Set([...prev, notificationId]))
-    // Remove notification after swipe animation
-    setTimeout(() => {
-      markAsRead(notificationId)
-      setSwipedNotifications(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(notificationId)
-        return newSet
-      })
-    }, 300)
   }
 
   const handleNotificationClick = (notificationId: string) => {
@@ -103,34 +89,8 @@ export default function NotificationBell() {
                   key={notification.id}
                   className={`p-3 rounded-lg border-l-4 ${getPriorityColor(notification.priority)} ${
                     !notification.read ? 'opacity-100' : 'opacity-60'
-                  } ${
-                    swipedNotifications.has(notification.id) ? 'transform translate-x-full opacity-0 transition-all duration-300' : ''
                   } cursor-pointer select-none`}
                   onClick={() => handleNotificationClick(notification.id)}
-                  onTouchStart={(e) => {
-                    const touch = e.touches[0]
-                    const startX = touch.clientX
-                    
-                    const handleTouchMove = (e: TouchEvent) => {
-                      const touch = e.touches[0]
-                      const currentX = touch.clientX
-                      const diffX = startX - currentX
-                      
-                      if (diffX > 50) { // Swipe left threshold
-                        handleSwipe(notification.id)
-                        document.removeEventListener('touchmove', handleTouchMove)
-                        document.removeEventListener('touchend', handleTouchEnd)
-                      }
-                    }
-                    
-                    const handleTouchEnd = () => {
-                      document.removeEventListener('touchmove', handleTouchMove)
-                      document.removeEventListener('touchend', handleTouchEnd)
-                    }
-                    
-                    document.addEventListener('touchmove', handleTouchMove)
-                    document.addEventListener('touchend', handleTouchEnd)
-                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">{notification.icon}</div>

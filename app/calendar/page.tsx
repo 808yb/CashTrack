@@ -25,7 +25,10 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tips, setTips] = useState<TipEntry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    const today = new Date()
+    return `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`
+  })
   const [selectedDateNote, setSelectedDateNote] = useState<string>("")
   const [selectedDateTags, setSelectedDateTags] = useState<string[]>([])
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -106,7 +109,7 @@ export default function CalendarView() {
     const loadTips = () => {
       const storedTips = getStoredTips()
       setTips(storedTips)
-      // If a date is already selected, update its note/amount/tags
+      // Always update note/tags for selectedDate
       if (selectedDate) {
         const summary = getDaySummary(selectedDate)
         setSelectedDateNote(summary.note || "")
@@ -493,6 +496,9 @@ export default function CalendarView() {
               </div>
             </div>
           </div>
+        )}
+        {selectedDate && (
+          <div className="text-xs text-gray-500 text-center mb-4">Tipp: Tippe auf einen anderen Tag im Kalender, um Details zu sehen.</div>
         )}
 
         {/* Edit Amount Dialog */}
