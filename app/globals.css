@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Swipeable Toast Notifications */
+.swipeable-toast {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.swipeable-toast.swiped {
+  transform: translateX(-100vw);
+  opacity: 0;
+}
+
+/* Touch-friendly toast styling */
+.swipeable-toast {
+  cursor: grab;
+  touch-action: pan-x;
+}
+
+.swipeable-toast:active {
+  cursor: grabbing;
+}
+
+/* Toast container improvements */
+#react-hot-toast {
+  z-index: 9999;
+}
+
+/* Mobile-specific toast improvements */
+@media (max-width: 768px) {
+  .swipeable-toast {
+    margin: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
