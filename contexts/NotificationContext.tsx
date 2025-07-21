@@ -82,15 +82,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const now = new Date()
     const hour = now.getHours()
     
-    // Evening reminder (after 6 PM) if no tips entered
+    // Evening reminder (after 6 PM) if no tips entered, only alle 45 Minuten
+    const lastReminderTimestamp = localStorage.getItem("cashtrack-last-reminder-timestamp")
+    const nowTimestamp = Date.now()
+    const REMINDER_DELAY = 45 * 60 * 1000 // 45 Minuten in ms
     if (hour >= 18 && todayTips.length === 0) {
-      addNotification({
-        type: 'reminder',
-        title: 'Trinkgeld vergessen?',
-        message: '💡 Vergiss nicht, dein Trinkgeld einzugeben!',
-        icon: '💰',
-        priority: 'medium'
-      })
+      if (!lastReminderTimestamp || nowTimestamp - Number(lastReminderTimestamp) > REMINDER_DELAY) {
+        addNotification({
+          type: 'reminder',
+          title: 'Trinkgeld vergessen?',
+          message: '💡 Vergiss nicht, dein Trinkgeld einzugeben!',
+          icon: '💰',
+          priority: 'medium'
+        })
+        localStorage.setItem("cashtrack-last-reminder-timestamp", nowTimestamp.toString())
+      }
     }
     
     // Morning motivation (before 10 AM) - only once per day
