@@ -1,11 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Tag, getStoredTags, saveTag, updateTag, deleteTag, tagColors } from "@/lib/utils"
+import { Tag, getStoredTags, saveTag, updateTag, deleteTag } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X, Plus, Edit2 } from "lucide-react"
+
+// Define tagColors here since it's not exported from utils
+const tagColors = [
+  "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", 
+  "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-gray-600"
+]
 
 interface TagManagerProps {
   open: boolean

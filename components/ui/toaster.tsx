@@ -20,7 +20,6 @@ export function Toaster() {
         return (
           <Toast
             key={id}
-            swipeDirection="left"
             {...props}
           >
             <div className="grid gap-1">
