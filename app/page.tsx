@@ -458,7 +458,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="px-4 pb-20">
         <div className="bg-white rounded-2xl p-6 mb-6">
-          <h2 className="text-2xl font-bold text-black mb-4">Dashboard 22</h2>
+          <h2 className="text-2xl font-bold text-black mb-4">Dashboard</h2>
           {/* Today's Tips */}
           <div className="bg-gray-200 rounded-xl p-4 mb-6">
             <div className="flex justify-between items-center">
