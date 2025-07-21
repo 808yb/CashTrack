@@ -1,9 +1,8 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
-import Head from 'next/head'
 import { NotificationProvider } from "@/contexts/NotificationContext"
 import { Toaster } from '@/components/ui/sonner'
 
@@ -12,11 +11,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CashTrack - Tip Tracker",
   description: "Track your daily cash tips easily",
-  generator: 'v0.dev',
+  generator: 'v_0.dev',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/icon.png', type: 'image/png', sizes: '192x192' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' }
     ],
     apple: [
@@ -24,12 +23,15 @@ export const metadata: Metadata = {
       { url: '/icon.png', sizes: '192x192', type: 'image/png' }
     ]
   },
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'CashTrack'
   }
+}
+
+export const viewport: Viewport = {
+  themeColor: '#f3f4f6',
 }
 
 export default function RootLayout({
@@ -39,16 +41,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <Head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="CashTrack" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#f3f4f6" />
-        <link rel="icon" href="/icon.png" />
-        <link rel="apple-touch-icon" href="/icon.png" />
-        <link rel="manifest" href="/manifest.json" />
-      </Head>
       <body className={inter.className}>
         <NotificationProvider>
           <div className="min-h-screen bg-gray-200">{children}</div>

@@ -239,8 +239,8 @@ export default function AddTips() {
               Ändern
             </Button>
             <Button
-              variant="outline"
-              className="flex-1 bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+              variant="default"
+              className="flex-1"
               onClick={() => setShowEndShiftDialog(true)}
             >
               Schicht beenden
