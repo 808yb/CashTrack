@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
+import { useRouter } from "next/navigation"
 
 interface TipEntry {
   date: string
@@ -22,6 +23,7 @@ interface TipEntry {
 
 export default function CalendarView() {
   const { addNotification } = useNotifications()
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tips, setTips] = useState<TipEntry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -345,65 +347,50 @@ export default function CalendarView() {
   ]
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gray-200 relative">
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 pt-8">
-        <h1 className="text-2xl font-bold text-black">CashTrack</h1>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <Link href="/profile">
-            <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-              <User className="w-6 h-6 text-white" />
+    <div className="px-4">
+      {/* Month Selector */}
+      {now && monthSlides.length > 0 && (
+        <>
+          <div className="mb-2">
+            <div ref={emblaRef} className="overflow-hidden">
+              <div className="flex" style={{ userSelect: 'none' }}>
+                {monthSlides.map((slide, idx) => (
+                  <div
+                    key={slide.year + '-' + slide.month}
+                    className="flex-shrink-0 w-full px-2"
+                    style={{ minWidth: '100%', maxWidth: '100%' }}
+                  >
+                    <div className="bg-white rounded-2xl px-4 py-3 flex flex-col items-center">
+                      <span className="flex-1 text-center text-lg font-medium mb-1">
+                        {monthNames[slide.month]} {slide.year}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </Link>
+          </div>
+          {showSwipeLabel && (
+            <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
+          )}
+        </>
+      )}
+
+      {/* Calendar Grid */}
+      <div className="bg-white rounded-2xl p-6 mb-6">
+        <div className="grid grid-cols-7 gap-1 mb-4">
+          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
+            <div key={day} className="text-center text-sm font-medium text-gray-500">
+              {day}
+            </div>
+          ))}
         </div>
+        <div className="grid grid-cols-7 gap-1">{renderCalendarDays()}</div>
       </div>
 
-      {/* Main Content */}
-      <div className="px-4 pb-20">
-        {/* Month Selector */}
-        {now && monthSlides.length > 0 && (
-          <>
-            <div className="mb-2">
-              <div ref={emblaRef} className="overflow-hidden">
-                <div className="flex" style={{ userSelect: 'none' }}>
-                  {monthSlides.map((slide, idx) => (
-                    <div
-                      key={slide.year + '-' + slide.month}
-                      className="flex-shrink-0 w-full px-2"
-                      style={{ minWidth: '100%', maxWidth: '100%' }}
-                    >
-                      <div className="bg-white rounded-2xl px-4 py-3 flex flex-col items-center">
-                        <span className="flex-1 text-center text-lg font-medium mb-1">
-                          {monthNames[slide.month]} {slide.year}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {showSwipeLabel && (
-              <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
-            )}
-          </>
-        )}
-
-        {/* Calendar Grid */}
-        <div className="bg-white rounded-2xl p-6 mb-6">
-          <div className="grid grid-cols-7 gap-1 mb-4">
-            {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-gray-500">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">{renderCalendarDays()}</div>
-        </div>
-
-        {/* Selected Date Details */}
-        {selectedDate && (
-          <div className="bg-white rounded-xl p-4 mb-6">
+      {/* Selected Date Details */}
+      {selectedDate && (
+        <div className="bg-white rounded-xl p-4 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-black">
                 {new Date(selectedDate).toLocaleDateString("de-DE", {
@@ -619,24 +606,6 @@ export default function CalendarView() {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">
-          <div className="flex justify-around py-4">
-            <Link href="/" className="flex flex-col items-center">
-              <Home className="w-6 h-6 text-black" />
-            </Link>
-            <Link href="/add-tips" className="flex flex-col items-center">
-              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-            </Link>
-            <Link href="/calendar" className="flex flex-col items-center">
-              <Calendar className="w-6 h-6 text-black" />
-            </Link>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

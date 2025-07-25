@@ -15,6 +15,11 @@ import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 import toast from 'react-hot-toast'
 import Fireworks from "@/components/ui/Fireworks"
+import { useRouter } from "next/navigation"
+import { useCountAnimation } from "@/hooks/useCountAnimation"
+
+// Add this CSS class at the top of your file
+const progressBarStyles = ``;
 
 interface TipEntry {
   date: string
@@ -23,6 +28,7 @@ interface TipEntry {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const [tips, setTips] = useState<TipEntry[]>([])
   const [todayTotal, setTodayTotal] = useState(0)
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -120,7 +126,7 @@ export default function Dashboard() {
         type: 'achievement',
         title: 'Ziel erreicht! 🎉',
         message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
-        icon: '🏆',
+        icon: '��',
         priority: 'high'
       })
     } else if (!hasReachedGoal && goalReached) {
@@ -360,6 +366,24 @@ export default function Dashboard() {
 
   const progressData = getProgressData()
 
+  const animatedTodayTotal = useCountAnimation({ end: todayTotal, duration: 1500 });
+  const animatedMonthTotal = useCountAnimation({ 
+    end: getMonthTips(selectedMonth.year, selectedMonth.month),
+    duration: 1500
+  });
+  const animatedWeeklyTotal = useCountAnimation({
+    end: weeklyData.reduce((sum, day) => sum + day.tips, 0),
+    duration: 1500
+  });
+  const animatedProgressTotal = useCountAnimation({
+    end: progressData.total,
+    duration: 1500
+  });
+  const animatedProgressRemaining = useCountAnimation({
+    end: progressData.remaining,
+    duration: 1500
+  });
+
   // Input validation for numbers and comma only
   const handleNumberInput = (value: string, setter: (value: string) => void) => {
     // Only allow numbers, comma, and backspace
@@ -439,24 +463,13 @@ export default function Dashboard() {
   }, [goalAmount, isWeeklyGoal])
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gray-200 relative">
+    <div className="px-4">
+      {/* Add the styles */}
+      {/* <style>{progressBarStyles}</style> */}
       {/* Fireworks celebration */}
       <Fireworks fire={shouldFireworks} />
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 pt-8">
-        <h1 className="text-2xl font-bold text-black">CashTrack</h1>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <Link href="/profile">
-            <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-              <User className="w-6 h-6 text-white" />
-            </div>
-          </Link>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="px-4 pb-20">
+      <div className="pb-4">
         <div className="bg-white rounded-2xl p-6 mb-6">
           <h2 className="text-2xl font-bold text-black mb-4">Dashboard</h2>
           {/* Today's Tips */}
@@ -464,7 +477,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-lg font-medium text-black">Trinkgeld heute</div>
-                <div className="text-3xl font-bold text-black">{formatCurrency(todayTotal)}</div>
+                <div className="text-3xl font-bold text-black">{formatCurrency(animatedTodayTotal)}</div>
               </div>
               <div className="text-right">
                 <div className="text-gray-600">{formatDate(new Date())}</div>
@@ -489,7 +502,7 @@ export default function Dashboard() {
                             Trinkgeld im {monthNames[slide.month]} {slide.year}
                           </span>
                           <div className="text-3xl font-bold text-center">
-                            {formatCurrency(getMonthTips(slide.year, slide.month))}
+                            {formatCurrency(animatedMonthTotal)}
                           </div>
                         </div>
                       </div>
@@ -526,7 +539,6 @@ export default function Dashboard() {
                   />
                   <Tooltip 
                     content={CustomBarTooltip}
-                    // formatter and labelFormatter are not needed with custom content
                     contentStyle={{
                       backgroundColor: '#F3F4F6',
                       border: 'none',
@@ -538,12 +550,6 @@ export default function Dashboard() {
                     dataKey="tips" 
                     fill="#374151"
                     radius={[4, 4, 0, 0]}
-                    animationDuration={1000}
-                    animationBegin={0}
-                    onClick={(data) => {
-                      // The tooltip will automatically show on click
-                      console.log('Clicked on:', data)
-                    }}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -553,14 +559,14 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium text-black">Gesamt diese Woche:</span>
                   <span className="text-2xl font-bold text-black">
-                    {formatCurrency(weeklyData.reduce((sum, day) => sum + day.tips, 0))}
+                    {formatCurrency(animatedWeeklyTotal)}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Progress Bar Section */}
+          {/* Progress Bar Section - Revert to original */}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-black mb-4">Ziel</h3>
             <div className="bg-white rounded-xl p-4">
@@ -588,13 +594,13 @@ export default function Dashboard() {
               
               <div className="flex justify-between items-center">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-black">{formatCurrency(progressData.total)}</div>
+                  <div className="text-2xl font-bold text-black">{formatCurrency(animatedProgressTotal)}</div>
                   <div className="text-sm text-gray-500">
                     {isWeeklyGoal ? "Gesammelt diese Woche" : "Gesammelt insgesamt"}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-black">{formatCurrency(progressData.remaining)}</div>
+                  <div className="text-2xl font-bold text-black">{formatCurrency(animatedProgressRemaining)}</div>
                   <div className="text-sm text-gray-500">Noch zu erreichen</div>
                 </div>
               </div>
@@ -690,17 +696,38 @@ export default function Dashboard() {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">
         <div className="flex justify-around py-4">
-          <Link href="/" className="flex flex-col items-center">
+          <button className="flex flex-col items-center" onClick={() => {
+            sessionStorage.setItem('navIndex', '0')
+            if (document.startViewTransition) {
+              document.startViewTransition(() => router.push('/'))
+            } else {
+              router.push('/')
+            }
+          }}>
             <Home className="w-6 h-6 text-black" />
-          </Link>
-          <Link href="/add-tips" className="flex flex-col items-center">
+          </button>
+          <button className="flex flex-col items-center" onClick={() => {
+            sessionStorage.setItem('navIndex', '1')
+            if (document.startViewTransition) {
+              document.startViewTransition(() => router.push('/add-tips'))
+            } else {
+              router.push('/add-tips')
+            }
+          }}>
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
               <Plus className="w-5 h-5 text-white" />
             </div>
-          </Link>
-          <Link href="/calendar" className="flex flex-col items-center">
+          </button>
+          <button className="flex flex-col items-center" onClick={() => {
+            sessionStorage.setItem('navIndex', '2')
+            if (document.startViewTransition) {
+              document.startViewTransition(() => router.push('/calendar'))
+            } else {
+              router.push('/calendar')
+            }
+          }}>
             <Calendar className="w-6 h-6 text-black" />
-          </Link>
+          </button>
         </div>
       </div>
 

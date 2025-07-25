@@ -1,10 +1,7 @@
-import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
-import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
-import { NotificationProvider } from "@/contexts/NotificationContext"
-import { Toaster } from '@/components/ui/sonner'
+import ClientLayout from "./client-layout"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -42,11 +39,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className={inter.className}>
-        <NotificationProvider>
-          <div className="min-h-screen bg-gray-200">{children}</div>
-          <Analytics />
-          <Toaster position="top-center" />
-        </NotificationProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   )

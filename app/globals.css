@@ -135,3 +135,45 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
 }
+
+/* View Transition Animations */
+@keyframes fade-slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fade-slide-out-left {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-40px); }
+}
+@keyframes fade-slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fade-slide-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(40px); }
+}
+
+/* Default: slide in from right (Dashboard -> Add Tips/Calendar) */
+.slide-left ::view-transition-old(root) {
+  animation-name: fade-slide-out-left;
+}
+.slide-left ::view-transition-new(root) {
+  animation-name: fade-slide-in-right;
+}
+
+/* Reverse: slide in from left (Add Tips/Calendar -> Dashboard) */
+.slide-right ::view-transition-old(root) {
+  animation-name: fade-slide-out-right;
+}
+.slide-right ::view-transition-new(root) {
+  animation-name: fade-slide-in-left;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: ease-in-out;
+}
+
+/* Optional: you can add more specific selectors for vertical transitions if needed */
