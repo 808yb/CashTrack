@@ -60,6 +60,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       description: notification.message,
       icon: notification.icon,
       duration: 4000,
+      closeButton: false, // Remove close button
+      dismissible: true, // Allow swipe to dismiss
     })
   }
 

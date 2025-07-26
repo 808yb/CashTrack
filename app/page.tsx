@@ -126,7 +126,7 @@ export default function Dashboard() {
         type: 'achievement',
         title: 'Ziel erreicht! 🎉',
         message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
-        icon: '��',
+        icon: '🏆',
         priority: 'high'
       })
     } else if (!hasReachedGoal && goalReached) {

@@ -74,12 +74,12 @@ export default function PageTransition({ children }: PageTransitionProps) {
             transition: {
               x: {
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
-                mass: 1
+                stiffness: 200,
+                damping: 25,
+                mass: 1.2
               },
               opacity: {
-                duration: 0.2
+                duration: 0.3
               }
             }
           }}
@@ -89,12 +89,12 @@ export default function PageTransition({ children }: PageTransitionProps) {
             transition: {
               x: {
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
-                mass: 1
+                stiffness: 200,
+                damping: 25,
+                mass: 1.2
               },
               opacity: {
-                duration: 0.15
+                duration: 0.25
               }
             }
           }}
