@@ -80,58 +80,100 @@ export default function AddTips() {
   }, [])
 
   const addTip = (amount: number) => {
-    saveTip(amount)
-    const newTotal = todayTotal + amount
-    setTodayTotal(newTotal)
+    // Ensure amount is a valid number and round to 2 decimal places to avoid floating point issues
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      console.error('Invalid amount:', amount);
+      return;
+    }
     
-    // Check for milestone achievements (every 10€)
-    const milestone = Math.floor(newTotal / 10) * 10
-    const previousMilestone = Math.floor(todayTotal / 10) * 10
-    if (milestone > previousMilestone && milestone > 0) {
+    const roundedAmount = Math.round(amount * 100) / 100;
+    if (roundedAmount <= 0) {
+      console.error('Amount must be greater than 0:', roundedAmount);
+      return;
+    }
+
+    try {
+      saveTip(roundedAmount);
+      const newTotal = todayTotal + roundedAmount;
+      setTodayTotal(newTotal);
       
-      // Add milestone notification
-      addNotification({
-        type: 'achievement',
-        title: 'Meilenstein erreicht! 🎯',
-        message: `Du hast ${milestone}€ Trinkgeld für heute gesammelt!`,
-        icon: '💰',
-        priority: 'medium'
-      })
+      // Check for milestone achievements (every 10€)
+      const milestone = Math.floor(newTotal / 10) * 10;
+      const previousMilestone = Math.floor(todayTotal / 10) * 10;
+      if (milestone > previousMilestone && milestone > 0) {
+        // Add milestone notification
+        addNotification({
+          type: 'achievement',
+          title: 'Meilenstein erreicht! 🎯',
+          message: `Du hast ${milestone}€ Trinkgeld für heute gesammelt!`,
+          icon: '💰',
+          priority: 'medium'
+        });
+      }
+    } catch (error) {
+      console.error('Error saving tip:', error);
     }
   }
 
   const handleCustomTip = () => {
-    const amount = Number.parseFloat(customAmount.replace(",", "."))
-    if (!isNaN(amount) && amount > 0) {
-      // Round to 2 decimal places to avoid floating point precision issues
-      const roundedAmount = Math.round(amount * 100) / 100
-      addTip(roundedAmount)
-      setCustomAmount("")
-      setShowCustomInput(false)
+    try {
+      // Replace comma with period for proper number parsing
+      const normalizedAmount = customAmount.trim().replace(",", ".");
+      const amount = Number.parseFloat(normalizedAmount);
+      
+      if (!isNaN(amount) && amount > 0) {
+        // Round to 2 decimal places to avoid floating point precision issues
+        const roundedAmount = Math.round(amount * 100) / 100;
+        addTip(roundedAmount);
+        setCustomAmount("");
+        setShowCustomInput(false);
+      } else {
+        console.error('Invalid custom amount:', customAmount);
+      }
+    } catch (error) {
+      console.error('Error processing custom tip:', error);
     }
   }
 
   const handleEditTips = () => {
-    const amount = Number.parseFloat(editAmount.replace(",", "."))
-    if (!isNaN(amount) && amount >= 0) {
-      // Round to 2 decimal places to avoid floating point precision issues
-      const roundedAmount = Math.round(amount * 100) / 100
-      // Use endShift to consolidate and update today's tips
-      endShift(roundedAmount, shiftNote, selectedTags) // Pass current note and tags
-      setTodayTotal(roundedAmount)
-      setEditAmount("")
-      setShowEditDialog(false)
+    try {
+      // Replace comma with period for proper number parsing
+      const normalizedAmount = editAmount.trim().replace(",", ".");
+      const amount = Number.parseFloat(normalizedAmount);
+      
+      if (!isNaN(amount) && amount >= 0) {
+        // Round to 2 decimal places to avoid floating point precision issues
+        const roundedAmount = Math.round(amount * 100) / 100;
+        // Use endShift to consolidate and update today's tips
+        endShift(roundedAmount, shiftNote, selectedTags); // Pass current note and tags
+        setTodayTotal(roundedAmount);
+        setEditAmount("");
+        setShowEditDialog(false);
+      } else {
+        console.error('Invalid edit amount:', editAmount);
+      }
+    } catch (error) {
+      console.error('Error editing tips:', error);
     }
   }
 
   const handleEditTipValues = () => {
-    const amount = Number.parseFloat(editTipAmount.replace(",", "."))
-    if (!isNaN(amount) && amount > 0) {
-      // Round to 2 decimal places to avoid floating point precision issues
-      const roundedAmount = Math.round(amount * 100) / 100
-      setTipValues(prev => ({ ...prev, [selectedTipButton]: roundedAmount }))
-      setEditTipAmount("")
-      setShowEditTipDialog(false)
+    try {
+      // Replace comma with period for proper number parsing
+      const normalizedAmount = editTipAmount.trim().replace(",", ".");
+      const amount = Number.parseFloat(normalizedAmount);
+      
+      if (!isNaN(amount) && amount > 0) {
+        // Round to 2 decimal places to avoid floating point precision issues
+        const roundedAmount = Math.round(amount * 100) / 100;
+        setTipValues(prev => ({ ...prev, [selectedTipButton]: roundedAmount }));
+        setEditTipAmount("");
+        setShowEditTipDialog(false);
+      } else {
+        console.error('Invalid tip value amount:', editTipAmount);
+      }
+    } catch (error) {
+      console.error('Error editing tip values:', error);
     }
   }
 
