@@ -331,9 +331,10 @@ export default function AddTips() {
 
       {/* Custom Amount Dialog */}
       <Dialog open={showCustomInput} onOpenChange={setShowCustomInput}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="custom-amount-desc">
           <DialogHeader>
             <DialogTitle>Benutzerdefinierten Betrag eingeben</DialogTitle>
+            <p id="custom-amount-desc" className="text-sm text-gray-600">Geben Sie einen benutzerdefinierten Betrag ein</p>
           </DialogHeader>
           <div className="space-y-4">
             <Input
@@ -359,9 +360,10 @@ export default function AddTips() {
 
       {/* End Shift Dialog */}
       <Dialog open={showEndShiftDialog} onOpenChange={setShowEndShiftDialog}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="end-shift-desc">
           <DialogHeader>
             <DialogTitle>Schicht beenden</DialogTitle>
+            <p id="end-shift-desc" className="text-sm text-gray-600">Beenden Sie Ihre Schicht und speichern Sie das Trinkgeld</p>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
@@ -433,9 +435,10 @@ export default function AddTips() {
 
       {/* Custom Tag Dialog */}
       <Dialog open={showCustomTagDialog} onOpenChange={setShowCustomTagDialog}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="custom-tag-desc">
           <DialogHeader>
             <DialogTitle>Neuen Tag erstellen</DialogTitle>
+            <p id="custom-tag-desc" className="text-sm text-gray-600">Erstellen Sie einen neuen Tag</p>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -476,9 +479,10 @@ export default function AddTips() {
 
       {/* Manage Tags Dialog */}
       <Dialog open={showManageTagsDialog} onOpenChange={setShowManageTagsDialog}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="manage-tags-desc">
           <DialogHeader>
             <DialogTitle>Tags verwalten</DialogTitle>
+            <p id="manage-tags-desc" className="text-sm text-gray-600">Verwalten Sie Ihre vorhandenen Tags</p>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-gray-600 mb-4">
@@ -521,9 +525,10 @@ export default function AddTips() {
 
       {/* Edit Tips Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="edit-tips-desc">
           <DialogHeader>
             <DialogTitle>Trinkgeld bearbeiten</DialogTitle>
+            <p id="edit-tips-desc" className="text-sm text-gray-600">Bearbeiten Sie den Gesamtbetrag des Trinkgelds</p>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -552,9 +557,10 @@ export default function AddTips() {
 
       {/* Edit Tip Values Dialog */}
       <Dialog open={showEditTipDialog} onOpenChange={setShowEditTipDialog}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto" aria-describedby="edit-tip-values-desc">
           <DialogHeader>
             <DialogTitle>Beitrag bearbeiten</DialogTitle>
+            <p id="edit-tip-values-desc" className="text-sm text-gray-600">Bearbeiten Sie die Werte der Trinkgeld-Schaltflächen</p>
           </DialogHeader>
           <div className="space-y-4">
             <div>
