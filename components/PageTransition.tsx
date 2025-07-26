@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { ReactNode, useEffect, useState, useRef } from "react";
+import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
 
 // Define the order and relationships of pages
 const pages = ["/", "/add-tips", "/calendar"];
@@ -15,8 +15,18 @@ export default function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const previousPathRef = useRef(pathname);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const updateDirection = useCallback(() => {
+    if (!isMountedRef.current) return;
+
     const previousPath = previousPathRef.current;
     
     if (pathname !== previousPath) {
@@ -24,21 +34,34 @@ export default function PageTransition({ children }: PageTransitionProps) {
       const currentIndex = pages.indexOf(pathname);
       const prevIndex = pages.indexOf(previousPath);
       
-      let isMovingForward = true;
-      
-      // Only calculate direction if both pages are in our defined pages array
-      if (currentIndex !== -1 && prevIndex !== -1) {
-        isMovingForward = currentIndex > prevIndex;
+      // Default to forward if paths aren't in the pages array
+      if (currentIndex === -1 || prevIndex === -1) {
+        setDirection('forward');
+      } else {
+        setDirection(currentIndex > prevIndex ? 'forward' : 'backward');
       }
       
-      setDirection(isMovingForward ? 'forward' : 'backward');
       previousPathRef.current = pathname;
     }
   }, [pathname]);
 
+  useEffect(() => {
+    updateDirection();
+  }, [updateDirection]);
+
+  // Prevent animation on initial render
+  const [isFirstRender, setIsFirstRender] = useState(true);
+  useEffect(() => {
+    setIsFirstRender(false);
+  }, []);
+
+  if (isFirstRender) {
+    return <div className="w-full">{children}</div>;
+  }
+
   return (
     <div className="relative isolate">
-      <AnimatePresence initial={false} mode="wait">
+      <AnimatePresence mode="wait">
         <motion.div
           key={pathname}
           initial={{ 
@@ -51,8 +74,8 @@ export default function PageTransition({ children }: PageTransitionProps) {
             transition: {
               x: {
                 type: "spring",
-                stiffness: 400,
-                damping: 40,
+                stiffness: 300,
+                damping: 30,
                 mass: 1
               },
               opacity: {
@@ -66,8 +89,8 @@ export default function PageTransition({ children }: PageTransitionProps) {
             transition: {
               x: {
                 type: "spring",
-                stiffness: 400,
-                damping: 40,
+                stiffness: 300,
+                damping: 30,
                 mass: 1
               },
               opacity: {

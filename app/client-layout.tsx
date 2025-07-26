@@ -8,17 +8,34 @@ import { Plus, Home, Calendar, User } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import NotificationBell from "@/components/NotificationBell"
-import { useCallback } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleNavigation = useCallback((path: string, index: string) => {
-    if (pathname === path) return;
-    sessionStorage.setItem('navIndex', index);
-    router.push(path);
+    if (!isMountedRef.current || pathname === path) return;
+    
+    try {
+      sessionStorage.setItem('navIndex', index);
+      router.push(path);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   }, [pathname, router]);
+
+  const isActive = useCallback((path: string) => {
+    return pathname === path;
+  }, [pathname]);
 
   return (
     <>
@@ -29,7 +46,7 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
             <h1 className="text-2xl font-bold text-black">CashTrack</h1>
             <div className="flex items-center gap-2">
               <NotificationBell />
-              <Link href="/profile">
+              <Link href="/profile" prefetch={false}>
                 <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
                   <User className="w-6 h-6 text-white" />
                 </div>
@@ -52,7 +69,7 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
           <div className="bg-white border-t border-gray-200 shadow-lg">
             <div className="flex justify-around py-4">
               <button 
-                className={`flex flex-col items-center transition-colors ${pathname === '/' ? 'text-blue-600' : 'text-black'}`}
+                className={`flex flex-col items-center transition-colors ${isActive('/') ? 'text-blue-600' : 'text-black'}`}
                 onClick={() => handleNavigation('/', '0')}
               >
                 <Home className="w-6 h-6" />
@@ -61,12 +78,12 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
                 className={`flex flex-col items-center transition-colors`}
                 onClick={() => handleNavigation('/add-tips', '1')}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${pathname === '/add-tips' ? 'bg-blue-600' : 'bg-black'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isActive('/add-tips') ? 'bg-blue-600' : 'bg-black'}`}>
                   <Plus className="w-5 h-5 text-white" />
                 </div>
               </button>
               <button 
-                className={`flex flex-col items-center transition-colors ${pathname === '/calendar' ? 'text-blue-600' : 'text-black'}`}
+                className={`flex flex-col items-center transition-colors ${isActive('/calendar') ? 'text-blue-600' : 'text-black'}`}
                 onClick={() => handleNavigation('/calendar', '2')}
               >
                 <Calendar className="w-6 h-6" />
@@ -88,7 +105,7 @@ export default function ClientLayout({
     <NotificationProvider>
       <AnimatedLayout>{children}</AnimatedLayout>
       <Analytics />
-      <Toaster position="top-center" />
+      <Toaster position="top-center" richColors closeButton />
     </NotificationProvider>
   )
 } 
