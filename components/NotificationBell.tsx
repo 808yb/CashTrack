@@ -87,15 +87,15 @@ export default function NotificationBell() {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 rounded-lg border-l-4 ${getPriorityColor(notification.priority)} ${
+                  className={`p-3 rounded-lg border-l-4 mb-2 ${getPriorityColor(notification.priority)} ${
                     !notification.read ? 'opacity-100' : 'opacity-60'
                   } cursor-pointer select-none`}
                   onClick={() => handleNotificationClick(notification.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-2xl">{notification.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="text-2xl flex-shrink-0">{notification.icon}</div>
+                    <div className="flex-grow">
+                      <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-sm">{notification.title}</h4>
                         <span className="text-xs text-gray-500">
                           {formatDistanceToNow(notification.timestamp, { 

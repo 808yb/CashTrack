@@ -55,8 +55,8 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    const loadTips = () => {
-      const storedTips = getStoredTips()
+    const loadTips = async () => {
+      const storedTips = await getStoredTips()
       setTips(storedTips)
 
       const today = getTodayKey()
@@ -95,6 +95,7 @@ export default function Dashboard() {
       const storedGoal = localStorage.getItem("cashtrack-goal")
       const storedGoalType = localStorage.getItem("cashtrack-goal-type")
       const storedGoalName = localStorage.getItem("cashtrack-goal-name")
+      const storedGoalReached = localStorage.getItem("cashtrack-goal-reached")
       if (storedGoal) {
         setGoalAmount(Number(storedGoal))
       }
@@ -103,6 +104,9 @@ export default function Dashboard() {
       }
       if (storedGoalName) {
         setGoalName(storedGoalName)
+      }
+      if (storedGoalReached) {
+        setGoalReached(storedGoalReached === "true")
       }
       
       // Initialize weekly reset tracking if not exists
@@ -113,26 +117,85 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Check for goal achievement and show confetti
+  // Check for goal achievement, show confetti and notification
   useEffect(() => {
+    if (typeof window === "undefined") return
+    
     const progressData = getProgressData()
     const hasReachedGoal = progressData.progressPercentage >= 100
+    const goalKey = isWeeklyGoal
+      ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
+      : `cashtrack-fireworks-global-goal-${goalAmount}`
+    const lastFired = localStorage.getItem("cashtrack-fireworks-last")
+    const storedGoalReached = localStorage.getItem("cashtrack-goal-reached") === "true"
     
-    if (hasReachedGoal && !goalReached) {
-      setGoalReached(true)
-      
-      // Add achievement notification
-      addNotification({
-        type: 'achievement',
-        title: 'Ziel erreicht! 🎉',
-        message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
-        icon: '🏆',
-        priority: 'high'
+    console.log('Goal Check:', {
+      progressPercentage: progressData.progressPercentage,
+      hasReachedGoal,
+      goalReached: storedGoalReached,
+      goalKey,
+      lastFired,
+      isWeeklyGoal,
+      goalAmount,
+      tips: tips.length
+    })
+    
+    if (hasReachedGoal) {
+      // Only show notification and fireworks if we haven't shown them for this goal yet
+      const shouldNotify = !storedGoalReached || lastFired !== goalKey
+      console.log('Should notify?', {
+        shouldNotify,
+        reason: !storedGoalReached ? 'Goal just reached' : lastFired !== goalKey ? 'New goal key' : 'Already notified'
       })
-    } else if (!hasReachedGoal && goalReached) {
+      
+      if (shouldNotify) {
+        console.log('Triggering notification and fireworks')
+        setGoalReached(true)
+        localStorage.setItem("cashtrack-goal-reached", "true")
+        setShouldFireworks(true)
+        localStorage.setItem("cashtrack-fireworks-last", goalKey)
+        
+        // Add achievement notification
+        addNotification({
+          type: 'achievement',
+          title: 'Ziel erreicht! 🎉',
+          message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
+          icon: '🏆',
+          priority: 'high'
+        })
+      }
+    } else {
+      console.log('Goal not reached, resetting states')
       setGoalReached(false)
+      localStorage.setItem("cashtrack-goal-reached", "false")
+      setShouldFireworks(false)
     }
-  }, [tips, goalAmount, goalReached, addNotification, isWeeklyGoal, goalAmount]) // Removed isWeeklyGoal from dependencies
+  }, [tips, goalAmount, addNotification, isWeeklyGoal])
+
+  // Reset fireworks when goal changes or week changes
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const goalKey = isWeeklyGoal
+      ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
+      : `cashtrack-fireworks-global-goal-${goalAmount}`
+    const lastFired = localStorage.getItem("cashtrack-fireworks-last")
+    
+    console.log('Goal/Week Change Check:', {
+      goalKey,
+      lastFired,
+      isWeeklyGoal,
+      goalAmount
+    })
+    
+    if (lastFired && lastFired !== goalKey) {
+      console.log('Clearing last fired due to goal/week change')
+      localStorage.removeItem("cashtrack-fireworks-last")
+      // Also reset goalReached state when goal changes
+      setGoalReached(false)
+      localStorage.setItem("cashtrack-goal-reached", "false")
+    }
+  }, [goalAmount, isWeeklyGoal])
 
   // Reset weekly goal when new week starts
   useEffect(() => {

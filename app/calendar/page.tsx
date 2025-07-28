@@ -4,7 +4,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Calendar, Plus, User, ChevronLeft, ChevronRight, Home } from "lucide-react"
 import Link from "next/link"
-import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift, updateTipForDate, getStoredTags, saveTag, updateTag, deleteTag, Tag } from "@/lib/utils"
+import { formatCurrency, formatDate, getStoredTips, getDaySummary, updateDayNote, endShift, updateTipForDate, getStoredTags, saveTag, updateTag, deleteTag } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 import { useRouter } from "next/navigation"
+import { Tag } from "@/lib/types"
 
 interface TipEntry {
   date: string
@@ -21,12 +22,19 @@ interface TipEntry {
   timestamp: number
 }
 
+interface DaySummary {
+  amount: number
+  note?: string
+  tags?: string[]
+}
+
 export default function CalendarView() {
   const { addNotification } = useNotifications()
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tips, setTips] = useState<TipEntry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [selectedDateSummary, setSelectedDateSummary] = useState<DaySummary>({ amount: 0 })
   const [selectedDate, setSelectedDate] = useState<string | null>(() => {
     const today = new Date()
     return `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`
@@ -108,45 +116,44 @@ export default function CalendarView() {
   const calendarDate = selectedMonth ? new Date(selectedMonth.year, selectedMonth.month, 1) : currentDate
 
   useEffect(() => {
-    const loadTips = () => {
-      const storedTips = getStoredTips()
+    const loadTips = async () => {
+      const storedTips = await getStoredTips()
       setTips(storedTips)
       // Always update note/tags for selectedDate
       if (selectedDate) {
-        const summary = getDaySummary(selectedDate)
+        const summary = await getDaySummary(selectedDate)
+        setSelectedDateSummary(summary)
         setSelectedDateNote(summary.note || "")
         setSelectedDateTags(summary.tags || [])
       }
     }
 
-    const loadTags = () => {
-      const storedTags = getStoredTags()
-      setTags(storedTags)
+    const loadData = async () => {
+      try {
+        const [_, tags] = await Promise.all([loadTips(), getStoredTags()])
+        if (Array.isArray(tags)) {
+          setTags(tags)
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+      }
     }
 
-    loadTips()
-    loadTags()
+    loadData()
 
     // Listen for storage changes and window focus to update calendar
     const handleStorageChange = () => {
-      loadTips()
-      loadTags()
+      loadData()
     }
 
     window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("focus", () => {
-      loadTips()
-      loadTags()
-    })
+    window.addEventListener("focus", handleStorageChange)
 
     return () => {
       window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("focus", () => {
-        loadTips()
-        loadTags()
-      })
+      window.removeEventListener("focus", handleStorageChange)
     }
-  }, [selectedDate]) // Re-run effect if selectedDate changes to update note
+  }, [selectedDate])
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
@@ -159,21 +166,21 @@ export default function CalendarView() {
     return day === 0 ? 6 : day - 1
   }
 
-  const getTipAmountForDate = (date: Date) => {
+  const getTipAmountForDate = async (date: Date) => {
     const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
       .getDate()
       .toString()
       .padStart(2, "0")}`
-    const summary = getDaySummary(dateKey)
-    return summary.amount
+    const summary = await getDaySummary(dateKey)
+    return summary.amount || 0
   }
 
-  const getTagsForDate = (date: Date) => {
+  const getTagsForDate = async (date: Date) => {
     const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
       .getDate()
       .toString()
       .padStart(2, "0")}`
-    const summary = getDaySummary(dateKey)
+    const summary = await getDaySummary(dateKey)
     return summary.tags || []
   }
 
@@ -201,40 +208,60 @@ export default function CalendarView() {
     setSelectedDateTags([])
   }
 
-  const handleDayClick = (date: Date) => {
+  const handleDayClick = async (date: Date) => {
     const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
       .getDate()
       .toString()
       .padStart(2, "0")}`
     setSelectedDate(dateKey)
-    const summary = getDaySummary(dateKey)
+    const summary = await getDaySummary(dateKey)
+    setSelectedDateSummary(summary)
     setSelectedDateNote(summary.note || "")
     setSelectedDateTags(summary.tags || [])
   }
 
-  const handleNoteSave = () => {
+  const handleNoteSave = async () => {
     if (selectedDate) {
-      updateDayNote(selectedDate, selectedDateNote, selectedDateTags)
-      // Re-load tips to ensure dashboard and calendar are updated
-      const storedTips = getStoredTips()
+      await updateDayNote(selectedDate, selectedDateNote, selectedDateTags)
+      
+      // Refresh data after saving note
+      const [storedTips, summary] = await Promise.all([
+        getStoredTips(),
+        getDaySummary(selectedDate)
+      ])
+      
       setTips(storedTips)
+      setSelectedDateSummary(summary)
+      setDayTipAmounts(prev => ({ ...prev, [selectedDate]: summary.amount || 0 }))
     }
   }
 
-  const handleEditTips = () => {
+  const handleEditTips = async () => {
     if (selectedDate) {
       const amount = Number.parseFloat(editAmount.replace(",", "."))
       if (!isNaN(amount) && amount >= 0) {
         // Round to 2 decimal places to avoid floating point precision issues
         const roundedAmount = Math.round(amount * 100) / 100
+        
         // Update the tip for the selected date
-        updateTipForDate(selectedDate, roundedAmount, selectedDateNote, selectedDateTags)
+        await updateTipForDate(selectedDate, roundedAmount, selectedDateNote, selectedDateTags)
+        
+        // Update local states immediately
+        setSelectedDateSummary(prev => ({ ...prev, amount: roundedAmount }))
+        setDayTipAmounts(prev => ({ ...prev, [selectedDate]: roundedAmount }))
+        
+        // Refresh all data
+        const [storedTips, summary] = await Promise.all([
+          getStoredTips(),
+          getDaySummary(selectedDate)
+        ])
+        
+        setTips(storedTips)
+        setSelectedDateSummary(summary)
+        setDayTipAmounts(prev => ({ ...prev, [selectedDate]: summary.amount || 0 }))
+        
         setEditAmount("")
         setShowEditDialog(false)
-        
-        // Re-load tips to update the display
-        const storedTips = getStoredTips()
-        setTips(storedTips)
       }
     }
   }
@@ -260,14 +287,15 @@ export default function CalendarView() {
     }
   }
 
-  const handleCustomTag = () => {
+  const handleCustomTag = async () => {
     if (customTagName.trim()) {
       const newTag = {
         name: customTagName.trim(),
         color: customTagColor,
       }
-      saveTag(newTag)
-      setTags(getStoredTags())
+      await saveTag(newTag)
+      const updatedTags = await getStoredTags()
+      setTags(updatedTags)
       setCustomTagName("")
       setCustomTagColor("bg-purple-500")
       setShowCustomTagDialog(false)
@@ -275,17 +303,43 @@ export default function CalendarView() {
   }
 
   // Diese Funktion löscht das Tag komplett aus dem System
-  const handleDeleteTag = (tagId: string) => {
-    deleteTag(tagId)
-    setTags(getStoredTags())
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag(tagId)
+    const updatedTags = await getStoredTags()
+    setTags(updatedTags)
     // Auch aus selectedDateTags entfernen, falls es dort war
     setSelectedDateTags(selectedDateTags.filter(id => id !== tagId))
   }
 
-  const handleEditTag = (tagId: string, newName: string, newColor: string) => {
-    updateTag(tagId, { name: newName, color: newColor })
-    setTags(getStoredTags())
+  const handleEditTag = async (tagId: string, newName: string, newColor: string) => {
+    await updateTag(tagId, { name: newName, color: newColor })
+    const updatedTags = await getStoredTags()
+    setTags(updatedTags)
   }
+
+  const [dayTipAmounts, setDayTipAmounts] = useState<Record<string, number>>({})
+
+  // Add this effect to load tip amounts for all days in the current month
+  useEffect(() => {
+    const loadTipAmounts = async () => {
+      const daysInMonth = getDaysInMonth(calendarDate)
+      const amounts: Record<string, number> = {}
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day)
+        const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
+          .getDate()
+          .toString()
+          .padStart(2, "0")}`
+        const summary = await getDaySummary(dateKey)
+        amounts[dateKey] = summary.amount || 0
+      }
+      
+      setDayTipAmounts(amounts)
+    }
+    
+    loadTipAmounts()
+  }, [calendarDate])
 
   const renderCalendarDays = () => {
     const daysInMonth = getDaysInMonth(calendarDate)
@@ -304,7 +358,7 @@ export default function CalendarView() {
         .getDate()
         .toString()
         .padStart(2, "0")}`
-      const tipAmount = getTipAmountForDate(date)
+      const tipAmount = dayTipAmounts[dateKey] || 0
       const isCurrentDay = isToday(date)
       const hasTips = tipAmount > 0
       const isSelected = selectedDate === dateKey
@@ -416,7 +470,7 @@ export default function CalendarView() {
             <div className="mb-4">
               <span className="block text-sm text-gray-600">Trinkgeld:</span>
               <span className="text-2xl font-bold text-black">
-                {formatCurrency(getDaySummary(selectedDate).amount || 0)}
+                {formatCurrency(selectedDateSummary.amount || 0)}
               </span>
             </div>
 

@@ -9,6 +9,7 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import NotificationBell from "@/components/NotificationBell"
 import { useCallback, useEffect, useRef } from "react"
+import { migrateToIndexedDB } from "@/lib/migrate"
 
 function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -101,6 +102,11 @@ export default function ClientLayout({
 }: {
   children: React.ReactNode
 }) {
+  useEffect(() => {
+    // Run migration when app starts
+    migrateToIndexedDB().catch(console.error)
+  }, [])
+
   return (
     <NotificationProvider>
       <AnimatedLayout>{children}</AnimatedLayout>

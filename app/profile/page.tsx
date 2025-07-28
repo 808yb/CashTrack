@@ -47,6 +47,7 @@ export default function Profile() {
             <span className="font-semibold ml-2">Updates</span>
             <p className="mt-2 text-gray-600">
               Wenn ein Update erscheint, bekommst du automatisch die neueste Version beim nächsten Öffnen der App.<br/>
+             
               <span className="text-xs text-gray-500">(Tipp: App als Lesezeichen oder auf den Homescreen speichern!)</span>
             </p>
           </div>
@@ -56,6 +57,9 @@ export default function Profile() {
             <p className="mt-2 text-gray-600">
               Wenn du Ideen oder Fehler findest, schreib mir gerne an <a href="mailto:cashtrack.contact@gmail.com" className="underline text-blue-600">cashtrack.contact@gmail.com</a>.<br/>
               Ich freue mich über jedes Feedback!
+            </p>
+            <p className="text-right mt-2 text-gray-600">
+              <span className="text-xs text-gray-500">(v1.0.0)</span>
             </p>
           </div>
         </div>

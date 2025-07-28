@@ -42,40 +42,33 @@ export default function AddTips() {
   ]
 
   useEffect(() => {
-    const loadTodayTips = () => {
-      const tips = getStoredTips()
+    const loadTodayTips = async () => {
+      const tips = await getStoredTips()
       const today = getTodayKey()
       const todayTips = tips.filter((tip) => tip.date === today)
       const total = todayTips.reduce((sum, tip) => sum + tip.amount, 0)
       setTodayTotal(total)
     }
 
-    const loadTags = () => {
-      const storedTags = getStoredTags()
+    const loadTags = async () => {
+      const storedTags = await getStoredTags()
       setAvailableTags(storedTags)
     }
 
-    loadTodayTips()
-    loadTags()
+    // Execute async functions
+    Promise.all([loadTodayTips(), loadTags()]).catch(console.error)
 
     // Listen for storage changes to update dashboard when returning from other pages
     const handleStorageChange = () => {
-      loadTodayTips()
-      loadTags()
+      Promise.all([loadTodayTips(), loadTags()]).catch(console.error)
     }
 
     window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("focus", () => {
-      loadTodayTips()
-      loadTags()
-    }) // Reload when window gets focus
+    window.addEventListener("focus", handleStorageChange)
 
     return () => {
       window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("focus", () => {
-        loadTodayTips()
-        loadTags()
-      })
+      window.removeEventListener("focus", handleStorageChange)
     }
   }, [])
 
@@ -192,23 +185,25 @@ export default function AddTips() {
     router.push("/")
   }
 
-  const handleCustomTag = () => {
+  const handleCustomTag = async () => {
     if (customTagName.trim()) {
       const newTag = {
         name: customTagName.trim(),
         color: customTagColor,
       }
-      saveTag(newTag)
-      setAvailableTags(getStoredTags())
+      await saveTag(newTag)
+      const updatedTags = await getStoredTags()
+      setAvailableTags(updatedTags)
       setCustomTagName("")
       setCustomTagColor("bg-purple-500")
       setShowCustomTagDialog(false)
     }
   }
 
-  const handleDeleteTag = (tagId: string) => {
-    deleteTag(tagId)
-    setAvailableTags(getStoredTags())
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag(tagId)
+    const updatedTags = await getStoredTags()
+    setAvailableTags(updatedTags)
     // Also remove from selected tags if it was selected
     setSelectedTags(selectedTags.filter(id => id !== tagId))
   }

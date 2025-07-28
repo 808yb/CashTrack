@@ -1,29 +1,17 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { db } from './db'
+import { TipEntry, Tag } from './types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
-}
-
-export interface TipEntry {
-  date: string
-  amount: number
-  note?: string
-  tags?: string[]
-  timestamp: number
-}
-
-export interface Tag {
-  id: string
-  name: string
-  color: string
 }
 
 // Default tags
 export const defaultTags: Tag[] = [
   { id: "rain", name: "Regen", color: "bg-blue-500" },
   { id: "holiday", name: "Feiertag", color: "bg-red-500" },
-  { id: "double", name: "Doppelschicht", color: "bg-green-500" },
+  { id: "double", name: "Schichtleitung", color: "bg-yellow-500" },
 ]
 
 export function formatCurrency(amount: number): string {
@@ -51,185 +39,212 @@ export function getTodayKey(): string {
   return `${year}-${month}-${day}`
 }
 
-export function getStoredTips(): TipEntry[] {
-  if (typeof window === "undefined") return []
-
+export async function getStoredTips(): Promise<TipEntry[]> {
   try {
-    const stored = localStorage.getItem("cashtrack-tips")
-    return stored ? JSON.parse(stored) : []
-  } catch {
+    await db.init()
+    return await db.getAllTips()
+  } catch (error) {
+    console.error('Error getting tips:', error)
     return []
   }
 }
 
-// Tag management functions with localStorage persistence
-export function getStoredTags(): Tag[] {
-  if (typeof window === "undefined") return defaultTags
-
+export async function getTipsByDate(date: string): Promise<TipEntry[]> {
   try {
-    const stored = localStorage.getItem("cashtrack-tags")
-    return stored ? JSON.parse(stored) : defaultTags
-  } catch {
+    await db.init()
+    return await db.getTipsByDate(date)
+  } catch (error) {
+    console.error('Error getting tips by date:', error)
+    return []
+  }
+}
+
+export async function saveTip(amount: number, note?: string, tags?: string[]): Promise<void> {
+  try {
+    await db.init()
+    const newTip: TipEntry = {
+      date: getTodayKey(),
+      amount,
+      note,
+      tags,
+      timestamp: Date.now(),
+    }
+    await db.addTip(newTip)
+  } catch (error) {
+    console.error('Error saving tip:', error)
+  }
+}
+
+// Tag management functions with IndexedDB persistence
+export async function getStoredTags(): Promise<Tag[]> {
+  try {
+    await db.init()
+    const tags = await db.getAllTags()
+    return tags.length > 0 ? tags : defaultTags
+  } catch (error) {
+    console.error('Error getting tags:', error)
     return defaultTags
   }
 }
 
-export function saveTag(tag: Omit<Tag, 'id'>): void {
-  if (typeof window === "undefined") return
-
-  const tags = getStoredTags()
-  const newTag: Tag = {
-    ...tag,
-    id: Date.now().toString(),
-  }
-  tags.push(newTag)
-  localStorage.setItem("cashtrack-tags", JSON.stringify(tags))
-}
-
-export function updateTag(tagId: string, updates: Partial<Tag>): void {
-  if (typeof window === "undefined") return
-
-  const tags = getStoredTags()
-  const index = tags.findIndex(tag => tag.id === tagId)
-  
-  if (index !== -1) {
-    tags[index] = { ...tags[index], ...updates }
-    localStorage.setItem("cashtrack-tags", JSON.stringify(tags))
+export async function saveTag(tag: Omit<Tag, 'id'>): Promise<void> {
+  try {
+    await db.init()
+    const newTag: Tag = {
+      ...tag,
+      id: Date.now().toString(),
+    }
+    await db.addTag(newTag)
+  } catch (error) {
+    console.error('Error saving tag:', error)
   }
 }
 
-export function deleteTag(tagId: string): void {
-  if (typeof window === "undefined") return
-
-  const tags = getStoredTags()
-  const filteredTags = tags.filter(tag => tag.id !== tagId)
-  localStorage.setItem("cashtrack-tags", JSON.stringify(filteredTags))
+export async function deleteTag(id: string): Promise<void> {
+  try {
+    await db.init()
+    await db.deleteTag(id)
+  } catch (error) {
+    console.error('Error deleting tag:', error)
+  }
 }
 
-export function saveTip(amount: number, note?: string): void {
-  if (typeof window === "undefined") return
-
-  const tips = getStoredTips()
-  const newTip: TipEntry = {
-    date: getTodayKey(),
-    amount,
-    note,
-    timestamp: Date.now(),
+export async function updateTag(tagId: string, updates: Partial<Tag>): Promise<void> {
+  try {
+    await db.init()
+    const tag = await db.getTag(tagId)
+    if (tag) {
+      const updatedTag = { ...tag, ...updates }
+      await db.updateTag(updatedTag)
+    }
+  } catch (error) {
+    console.error('Error updating tag:', error)
   }
-
-  tips.push(newTip)
-  localStorage.setItem("cashtrack-tips", JSON.stringify(tips))
 }
 
 // This function is used to get the consolidated tip amount and note for a specific day
-export function getDaySummary(dateKey: string): { amount: number; note?: string; tags?: string[] } {
-  if (typeof window === "undefined") return { amount: 0 }
+export async function getDaySummary(dateKey: string): Promise<{ amount: number; note?: string; tags?: string[] }> {
+  try {
+    const tips = await getTipsByDate(dateKey)
+    // Find the consolidated entry for the day (assuming endShift creates one)
+    const dayEntry = tips.find((tip) => tip.date === dateKey)
 
-  const tips = getStoredTips()
-  // Find the consolidated entry for the day (assuming endShift creates one)
-  const dayEntry = tips.find((tip) => tip.date === dateKey)
-
-  if (dayEntry) {
-    return { amount: dayEntry.amount, note: dayEntry.note, tags: dayEntry.tags }
-  } else {
-    // If no consolidated entry, sum up individual tips for the day
-    const dayTips = tips.filter((tip) => tip.date === dateKey)
-    const totalAmount = dayTips.reduce((sum, tip) => sum + tip.amount, 0)
-    return { amount: totalAmount }
+    if (dayEntry) {
+      return { amount: dayEntry.amount, note: dayEntry.note, tags: dayEntry.tags }
+    } else {
+      // If no consolidated entry, sum up individual tips for the day
+      const totalAmount = tips.reduce((sum, tip) => sum + tip.amount, 0)
+      return { amount: totalAmount }
+    }
+  } catch (error) {
+    console.error('Error getting day summary:', error)
+    return { amount: 0 }
   }
 }
 
 // This function handles ending a shift, consolidating all tips for the day into one entry
-export function endShift(amount: number, note?: string, tags?: string[]): void {
-  if (typeof window === "undefined") return
+export async function endShift(amount: number, note?: string, tags?: string[]): Promise<void> {
+  try {
+    const today = getTodayKey()
+    await db.init()
+    
+    // Remove any existing entries for today
+    await db.deleteTipsByDate(today)
 
-  const today = getTodayKey()
-  let tips = getStoredTips()
-
-  // Remove any existing entries for today (individual tips or previous consolidated shift)
-  tips = tips.filter((tip) => tip.date !== today)
-
-  // Add the final shift amount as a single entry if amount > 0 or there's a note or tags
-  if (amount > 0 || (note && note.trim() !== "") || (tags && tags.length > 0)) {
-    const shiftEntry: TipEntry = {
-      date: today,
-      amount,
-      note: note?.trim() || undefined,
-      tags,
-      timestamp: Date.now(),
+    // Add the final shift amount as a single entry if amount > 0 or there's a note or tags
+    if (amount > 0 || (note && note.trim() !== "") || (tags && tags.length > 0)) {
+      const shiftEntry: TipEntry = {
+        date: today,
+        amount,
+        note: note?.trim() || undefined,
+        tags,
+        timestamp: Date.now(),
+      }
+      await db.addTip(shiftEntry)
     }
-    tips.push(shiftEntry)
+  } catch (error) {
+    console.error('Error ending shift:', error)
   }
-
-  localStorage.setItem("cashtrack-tips", JSON.stringify(tips))
 }
 
 // This function updates the note for a specific day's consolidated entry
-export function updateDayNote(dateKey: string, newNote: string, tags?: string[]): void {
-  if (typeof window === "undefined") return
+export async function updateDayNote(dateKey: string, newNote: string, tags?: string[]): Promise<void> {
+  try {
+    await db.init()
+    const tips = await getTipsByDate(dateKey)
+    const tip = tips.find((t) => t.date === dateKey)
 
-  const tips = getStoredTips()
-  const index = tips.findIndex((tip) => tip.date === dateKey)
-
-  if (index !== -1) {
-    // Update existing entry's note and tags
-    tips[index].note = newNote.trim() || undefined
-    tips[index].tags = tags
-  } else {
-    // If no entry exists for the day, create one with 0 amount and the note
-    const newTip: TipEntry = {
-      date: dateKey,
-      amount: 0,
-      note: newNote.trim() || undefined,
-      tags,
-      timestamp: Date.now(),
+    if (tip) {
+      // Update existing entry's note and tags
+      const updatedTip = {
+        ...tip,
+        note: newNote.trim() || undefined,
+        tags,
+        timestamp: Date.now(),
+      }
+      await db.updateTip(updatedTip)
+    } else {
+      // If no entry exists for the day, create one with 0 amount and the note
+      const newTip: TipEntry = {
+        date: dateKey,
+        amount: 0,
+        note: newNote.trim() || undefined,
+        tags,
+        timestamp: Date.now(),
+      }
+      await db.addTip(newTip)
     }
-    tips.push(newTip)
+  } catch (error) {
+    console.error('Error updating day note:', error)
   }
-  localStorage.setItem("cashtrack-tips", JSON.stringify(tips))
 }
 
 // This function clears all individual tips for the current day
-export function clearTodayTips(): void {
-  if (typeof window === "undefined") return
-
-  const tips = getStoredTips()
-  const today = getTodayKey()
-  const filteredTips = tips.filter((tip) => tip.date !== today)
-  localStorage.setItem("cashtrack-tips", JSON.stringify(filteredTips))
+export async function clearTodayTips(): Promise<void> {
+  try {
+    const today = getTodayKey()
+    await db.init()
+    await db.deleteTipsByDate(today)
+  } catch (error) {
+    console.error('Error clearing today tips:', error)
+  }
 }
 
 // This function updates today's tips by clearing existing and adding a new consolidated entry
-export function updateTodayTips(newAmount: number): void {
-  if (typeof window === "undefined") return
+export async function updateTodayTips(newAmount: number): Promise<void> {
+  try {
+    // Clear today's tips first
+    await clearTodayTips()
 
-  // Clear today's tips first
-  clearTodayTips()
-
-  // Add new amount if greater than 0
-  if (newAmount > 0) {
-    saveTip(newAmount)
+    // Add new amount if greater than 0
+    if (newAmount > 0) {
+      await saveTip(newAmount)
+    }
+  } catch (error) {
+    console.error('Error updating today tips:', error)
   }
 }
 
 // Update the tip for a specific date (overwrite or create consolidated entry)
-export function updateTipForDate(dateKey: string, amount: number, note?: string, tags?: string[]): void {
-  if (typeof window === "undefined") return
+export async function updateTipForDate(dateKey: string, amount: number, note?: string, tags?: string[]): Promise<void> {
+  try {
+    await db.init()
+    
+    // Remove any existing entries for the date
+    await db.deleteTipsByDate(dateKey)
 
-  let tips = getStoredTips()
-  // Remove any existing entries for the date
-  tips = tips.filter((tip) => tip.date !== dateKey)
-
-  // Add the new consolidated entry if amount > 0 or there's a note or tags
-  if (amount > 0 || (note && note.trim() !== "") || (tags && tags.length > 0)) {
-    const entry = {
-      date: dateKey,
-      amount,
-      note: note?.trim() || undefined,
-      tags,
-      timestamp: Date.now(),
+    // Add the new consolidated entry if amount > 0 or there's a note or tags
+    if (amount > 0 || (note && note.trim() !== "") || (tags && tags.length > 0)) {
+      const entry: TipEntry = {
+        date: dateKey,
+        amount,
+        note: note?.trim() || undefined,
+        tags,
+        timestamp: Date.now(),
+      }
+      await db.addTip(entry)
     }
-    tips.push(entry)
+  } catch (error) {
+    console.error('Error updating tip for date:', error)
   }
-  localStorage.setItem("cashtrack-tips", JSON.stringify(tips))
 }
