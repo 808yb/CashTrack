@@ -255,3 +255,5 @@ export async function updateTipForDate(dateKey: string, amount: number, note?: s
     console.error('Error updating tip for date:', error)
   }
 }
+
+export type { Tag } from "./types";

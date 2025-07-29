@@ -36,7 +36,15 @@ export async function migrateToIndexedDB(): Promise<void> {
     // Migrate tips
     const storedTips = localStorage.getItem("cashtrack-tips")
     if (storedTips) {
-      const tips: TipEntry[] = JSON.parse(storedTips)
+      let tips: TipEntry[] = JSON.parse(storedTips)
+      // Deduplicate: only keep the first occurrence of each date+amount
+      const seen = new Set()
+      tips = tips.filter(tip => {
+        const key = `${tip.date}|${tip.amount}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
       progress.total = tips.length
       for (let i = 0; i < tips.length; i++) {
         await db.addTip(tips[i])
