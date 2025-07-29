@@ -2,103 +2,82 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
-
-// Define the order and relationships of pages
-const pages = ["/", "/add-tips", "/calendar"];
+import { ReactNode, useEffect, useRef } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
 }
 
+// Define main navigation pages in order
+const MAIN_PAGES = ['/', '/add-tips', '/calendar'];
+
 export default function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
-  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
-  const previousPathRef = useRef(pathname);
-  const isMountedRef = useRef(true);
+  const prevPathname = useRef(pathname);
+
+  // Determine if this is a profile page transition
+  const isProfileTransition = pathname === '/profile' || prevPathname.current === '/profile';
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const updateDirection = useCallback(() => {
-    if (!isMountedRef.current) return;
-
-    const previousPath = previousPathRef.current;
-    
-    if (pathname !== previousPath) {
-      // Calculate direction based on page indices
-      const currentIndex = pages.indexOf(pathname);
-      const prevIndex = pages.indexOf(previousPath);
-      
-      // Default to forward if paths aren't in the pages array
-      if (currentIndex === -1 || prevIndex === -1) {
-        setDirection('forward');
-      } else {
-        setDirection(currentIndex > prevIndex ? 'forward' : 'backward');
-      }
-      
-      previousPathRef.current = pathname;
-    }
+    prevPathname.current = pathname;
   }, [pathname]);
 
-  useEffect(() => {
-    updateDirection();
-  }, [updateDirection]);
-
-  // Prevent animation on initial render
-  const [isFirstRender, setIsFirstRender] = useState(true);
-  useEffect(() => {
-    setIsFirstRender(false);
-  }, []);
-
-  if (isFirstRender) {
-    return <div className="w-full">{children}</div>;
+  // Handle profile transitions separately with just fade
+  if (isProfileTransition) {
+    return (
+      <div className="w-full min-h-screen bg-gray-200">
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {children}
+        </motion.div>
+      </div>
+    );
   }
 
+  // Handle main navigation transitions with slides
+  const currentIndex = MAIN_PAGES.indexOf(pathname);
+  const prevIndex = MAIN_PAGES.indexOf(prevPathname.current);
+  const direction = currentIndex > prevIndex ? 'forward' : 'backward';
+
   return (
-    <div className="relative isolate">
-      <AnimatePresence mode="wait">
+    <div className="relative w-full min-h-screen bg-gray-200 overflow-hidden">
+      <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={pathname}
           initial={{ 
-            x: direction === 'forward' ? "100%" : "-100%",
-            opacity: 0
+            x: direction === 'forward' ? '-100%' : '-100%'
           }}
           animate={{ 
             x: 0,
-            opacity: 1,
             transition: {
-              x: {
-                type: "spring",
-                stiffness: 200,
-                damping: 25,
-                mass: 1.2
-              },
-              opacity: {
-                duration: 0.3
-              }
+              type: "spring",
+              stiffness: 500,
+              damping: 40,
+              mass: 0.6
             }
           }}
           exit={{ 
-            x: direction === 'forward' ? "-100%" : "100%",
-            opacity: 0,
+            x: direction === 'forward' ? '100%' : '100%',
             transition: {
-              x: {
-                type: "spring",
-                stiffness: 200,
-                damping: 25,
-                mass: 1.2
-              },
-              opacity: {
-                duration: 0.25
-              }
+              type: "spring",
+              stiffness: 500,
+              damping: 40,
+              mass: 0.6
             }
           }}
-          className="w-full"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            top: 0,
+            left: 0
+          }}
+          className="w-full min-h-screen"
         >
           {children}
         </motion.div>

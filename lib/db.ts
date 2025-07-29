@@ -1,7 +1,8 @@
 import { TipEntry, Tag, Notification } from './types'
 
 const DB_NAME = 'cashtrack-db'
-const DB_VERSION = 1
+// 2024-03-19 – bumped to 2 to ensure new object stores are created
+const DB_VERSION = 2
 
 export interface DBSchema {
   tips: TipEntry

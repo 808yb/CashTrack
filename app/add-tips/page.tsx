@@ -208,9 +208,10 @@ export default function AddTips() {
     setSelectedTags(selectedTags.filter(id => id !== tagId))
   }
 
-  const handleEditTag = (tagId: string, newName: string, newColor: string) => {
-    updateTag(tagId, { name: newName, color: newColor })
-    setAvailableTags(getStoredTags())
+  const handleEditTag = async (tagId: string, newName: string, newColor: string) => {
+    await updateTag(tagId, { name: newName, color: newColor })
+    const updatedTags = await getStoredTags()
+    setAvailableTags(updatedTags)
   }
 
   const toggleTag = (tagId: string) => {

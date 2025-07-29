@@ -2,6 +2,8 @@ export interface TipEntry {
   date: string
   amount: number
   note?: string
+  /** Array of tag ids that were selected for this tip */
+  tags?: string[]
   timestamp: number
 }
 
