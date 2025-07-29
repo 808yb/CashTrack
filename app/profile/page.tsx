@@ -2,21 +2,52 @@
 
 import { getStoredTips } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import React from "react"; // Added for React.useRef
+import React, { useState } from "react";
 
 export default function Profile() {
-  // Debug: Export tips as JSON
-  async function handleExportTips() {
+  // State for export/import UI and messages
+  const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // Export: Show only Kopieren button
+  async function handleExport() {
+    setShowExport((prev) => !prev);
+    setShowImport(false);
+    setMessage(null);
+  }
+  async function handleCopyExport() {
     const tips = await getStoredTips();
-    const blob = new Blob([JSON.stringify(tips, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "cashtrack-tips-export.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await navigator.clipboard.writeText(JSON.stringify(tips, null, 2));
+    setMessage("Daten wurden in die Zwischenablage kopiert. Füge sie zum Sichern in eine Notiz oder E-Mail ein.");
+    setShowModal(true);
+  }
+
+  // Import: Show only Einfügen & Importieren button
+  function handleImport() {
+    setShowImport((prev) => !prev);
+    setShowExport(false);
+    setMessage(null);
+  }
+  async function handlePasteImport() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const importedTips = JSON.parse(text);
+      if (!Array.isArray(importedTips)) throw new Error("Ungültiges Format");
+      if (!window.confirm("Alle aktuellen Trinkgeld-Daten werden durch die importierten Daten ersetzt. Fortfahren?")) return;
+      await (await import("@/lib/db")).db.init();
+      await (await import("@/lib/db")).db.clearTips();
+      for (const tip of importedTips) {
+        await (await import("@/lib/db")).db.addTip(tip);
+      }
+      setMessage("Import erfolgreich! Deine Trinkgeld-Daten wurden wiederhergestellt.");
+      setShowModal(true);
+      setShowImport(false);
+    } catch (e) {
+      setMessage("Fehler beim Importieren der Daten. Stelle sicher, dass du gültige CashTrack-Daten in der Zwischenablage hast.");
+      setShowModal(true);
+    }
   }
 
   // Cleanup duplicate tips
@@ -31,7 +62,8 @@ export default function Profile() {
       return true;
     });
     if (deduped.length === tips.length) {
-      alert("Keine doppelten Einträge gefunden. Deine Daten sind bereits sauber.");
+      setMessage("Keine doppelten Einträge gefunden. Deine Daten sind bereits sauber.");
+      setShowModal(true);
       return;
     }
     // Clear all tips and re-add deduped
@@ -40,35 +72,13 @@ export default function Profile() {
     for (const tip of deduped) {
       await (await import("@/lib/db")).db.addTip(tip);
     }
-    alert(`Bereinigung abgeschlossen! ${tips.length - deduped.length} doppelte Einträge entfernt.`);
+    setMessage(`Bereinigung abgeschlossen! ${tips.length - deduped.length} doppelte Einträge entfernt.`);
+    setShowModal(true);
   }
 
-  // Import tips from JSON file
-  async function handleImportTips(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const importedTips = JSON.parse(text);
-      if (!Array.isArray(importedTips)) throw new Error("Ungültiges Format");
-      if (!window.confirm("Alle aktuellen Trinkgeld-Daten werden durch die importierten Daten ersetzt. Fortfahren?")) return;
-      await (await import("@/lib/db")).db.init();
-      await (await import("@/lib/db")).db.clearTips();
-      for (const tip of importedTips) {
-        await (await import("@/lib/db")).db.addTip(tip);
-      }
-      alert("Import erfolgreich! Deine Trinkgeld-Daten wurden wiederhergestellt.");
-    } catch (e) {
-      alert("Fehler beim Importieren der Daten. Stelle sicher, dass es sich um eine gültige CashTrack-Exportdatei handelt.");
-    }
-    // Reset the input so the same file can be selected again if needed
-    event.target.value = "";
-  }
-
-  // Ref for the hidden file input
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  function triggerFileInput() {
-    fileInputRef.current?.click();
+  function closeModal() {
+    setShowModal(false);
+    setMessage(null);
   }
 
   return (
@@ -142,20 +152,32 @@ export default function Profile() {
               Doppelte Einträge bereinigen
             </Button>
             <div className="flex flex-row gap-4 w-full max-w-xs justify-center">
-              <Button variant="default" onClick={handleExportTips} className="w-full">
-                Exportieren
+              <Button variant="default" onClick={handleExport} className="w-full">
+                Export
               </Button>
-              <Button variant="default" onClick={triggerFileInput} className="w-full">
-                Importieren
+              <Button variant="default" onClick={handleImport} className="w-full">
+                Import
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json"
-                className="hidden"
-                onChange={handleImportTips}
-              />
             </div>
+            {showExport && (
+              <Button variant="secondary" onClick={handleCopyExport} className="w-full max-w-xs mt-2">
+                Kopieren
+              </Button>
+            )}
+            {showImport && (
+              <Button variant="secondary" onClick={handlePasteImport} className="w-full max-w-xs mt-2">
+                Einfügen & Importieren
+              </Button>
+            )}
+            {showModal && message && (
+              <div className="fixed inset-0 flex items-center justify-center z-50">
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-6 max-w-xs w-full text-center">
+                  <div className="mb-4 text-gray-900">{message}</div>
+                  <Button variant="default" onClick={closeModal} className="w-full">OK</Button>
+                </div>
+                <div className="fixed inset-0 bg-black opacity-20 z-40" onClick={closeModal}></div>
+              </div>
+            )}
           </div>
         </div>
       </div>
