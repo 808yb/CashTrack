@@ -79,8 +79,15 @@ export async function saveTip(amount: number, note?: string, tags?: string[]): P
 export async function getStoredTags(): Promise<Tag[]> {
   try {
     await db.init()
-    const tags = await db.getAllTags()
-    return tags.length > 0 ? tags : defaultTags
+    let tags = await db.getAllTags()
+    if (tags.length === 0) {
+      // Only insert default tags if the store is completely empty
+      for (const tag of defaultTags) {
+        await db.addTag(tag)
+      }
+      tags = await db.getAllTags()
+    }
+    return tags
   } catch (error) {
     console.error('Error getting tags:', error)
     return defaultTags

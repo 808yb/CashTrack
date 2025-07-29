@@ -1,6 +1,22 @@
 "use client"
 
+import { getStoredTips } from "@/lib/utils"
+
 export default function Profile() {
+  // Debug: Export tips as JSON
+  async function handleExportTips() {
+    const tips = await getStoredTips();
+    const blob = new Blob([JSON.stringify(tips, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cashtrack-tips-export.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="px-4">
       <div className="bg-white rounded-2xl p-6">
@@ -62,6 +78,15 @@ export default function Profile() {
               <span className="text-xs text-gray-500">(v1.0.0)</span>
             </p>
           </div>
+        </div>
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={handleExportTips}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg border-2 border-red-800 hover:bg-red-700 transition-all"
+            style={{ zIndex: 1000 }}
+          >
+            🚨 Exportiere alle Trinkgeld-Daten (Debug)
+          </button>
         </div>
       </div>
     </div>

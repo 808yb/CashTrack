@@ -21,4 +21,5 @@ export interface Notification {
   priority: 'low' | 'medium' | 'high'
   timestamp: number
   read: boolean
+  milestoneKey?: string // for internal deduplication
 } 

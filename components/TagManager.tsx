@@ -28,24 +28,26 @@ export default function TagManager({ open, onOpenChange }: TagManagerProps) {
 
   useEffect(() => {
     if (open) {
-      setTags(getStoredTags())
+      (async () => {
+        setTags(await getStoredTags())
+      })()
     }
   }, [open])
 
-  const handleCreateTag = () => {
+  const handleCreateTag = async () => {
     if (newTagName.trim()) {
-      saveTag({ name: newTagName.trim(), color: newTagColor })
-      setTags(getStoredTags())
+      await saveTag({ name: newTagName.trim(), color: newTagColor })
+      setTags(await getStoredTags())
       setNewTagName("")
       setNewTagColor(tagColors[0])
       setShowCreateDialog(false)
     }
   }
 
-  const handleEditTag = () => {
+  const handleEditTag = async () => {
     if (editingTag && newTagName.trim()) {
-      updateTag(editingTag.id, { name: newTagName.trim(), color: newTagColor })
-      setTags(getStoredTags())
+      await updateTag(editingTag.id, { name: newTagName.trim(), color: newTagColor })
+      setTags(await getStoredTags())
       setNewTagName("")
       setNewTagColor(tagColors[0])
       setEditingTag(null)
@@ -53,9 +55,9 @@ export default function TagManager({ open, onOpenChange }: TagManagerProps) {
     }
   }
 
-  const handleDeleteTag = (tagId: string) => {
-    deleteTag(tagId)
-    setTags(getStoredTags())
+  const handleDeleteTag = async (tagId: string) => {
+    await deleteTag(tagId)
+    setTags(await getStoredTags())
   }
 
   const startEditTag = (tag: Tag) => {

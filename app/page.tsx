@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import Fireworks from "@/components/ui/Fireworks"
 import { useRouter } from "next/navigation"
 import { useCountAnimation } from "@/hooks/useCountAnimation"
+import { db } from "@/lib/db";
 
 // Add this CSS class at the top of your file
 const progressBarStyles = ``;
@@ -120,55 +121,56 @@ export default function Dashboard() {
   // Check for goal achievement, show confetti and notification
   useEffect(() => {
     if (typeof window === "undefined") return
-    
+
     const progressData = getProgressData()
     const hasReachedGoal = progressData.progressPercentage >= 100
-    const goalKey = isWeeklyGoal
+
+    // Track which type of goal was last notified
+    const lastGoalType = localStorage.getItem("cashtrack-goal-type-notified")
+    const lastGoalKey = localStorage.getItem("cashtrack-fireworks-last")
+    const currentGoalKey = isWeeklyGoal
       ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
       : `cashtrack-fireworks-global-goal-${goalAmount}`
-    const lastFired = localStorage.getItem("cashtrack-fireworks-last")
-    const storedGoalReached = localStorage.getItem("cashtrack-goal-reached") === "true"
-    
-    console.log('Goal Check:', {
-      progressPercentage: progressData.progressPercentage,
-      hasReachedGoal,
-      goalReached: storedGoalReached,
-      goalKey,
-      lastFired,
-      isWeeklyGoal,
-      goalAmount,
-      tips: tips.length
-    })
-    
-    if (hasReachedGoal) {
-      // Only show notification and fireworks if we haven't shown them for this goal yet
-      const shouldNotify = !storedGoalReached || lastFired !== goalKey
-      console.log('Should notify?', {
-        shouldNotify,
-        reason: !storedGoalReached ? 'Goal just reached' : lastFired !== goalKey ? 'New goal key' : 'Already notified'
+
+    // Add milestoneKey for deduplication
+    const milestoneKey = isWeeklyGoal
+      ? `milestone-achievement-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
+      : `milestone-achievement-global-goal-${goalAmount}`;
+
+    // Deduplicate using IndexedDB
+    async function achievementNotificationExists() {
+      await db.init();
+      const all = await db.getAllNotifications();
+      return all.some(n => n.type === 'achievement' && n.milestoneKey === milestoneKey);
+    }
+
+    const shouldNotify =
+      hasReachedGoal &&
+      (lastGoalType !== (isWeeklyGoal ? "weekly" : "global") || lastGoalKey !== currentGoalKey)
+
+    if (shouldNotify) {
+      achievementNotificationExists().then(exists => {
+        if (!exists) {
+          setGoalReached(true)
+          setShouldFireworks(true)
+          localStorage.setItem("cashtrack-goal-reached", "true")
+          localStorage.setItem("cashtrack-fireworks-last", currentGoalKey)
+          localStorage.setItem("cashtrack-goal-type-notified", isWeeklyGoal ? "weekly" : "global")
+
+          addNotification({
+            type: 'achievement',
+            title: 'Ziel erreicht! 🎉',
+            message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
+            icon: '🏆',
+            priority: 'high',
+            milestoneKey
+          })
+        }
       })
-      
-      if (shouldNotify) {
-        console.log('Triggering notification and fireworks')
-        setGoalReached(true)
-        localStorage.setItem("cashtrack-goal-reached", "true")
-        setShouldFireworks(true)
-        localStorage.setItem("cashtrack-fireworks-last", goalKey)
-        
-        // Add achievement notification
-        addNotification({
-          type: 'achievement',
-          title: 'Ziel erreicht! 🎉',
-          message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
-          icon: '🏆',
-          priority: 'high'
-        })
-      }
-    } else {
-      console.log('Goal not reached, resetting states')
+    } else if (!hasReachedGoal) {
       setGoalReached(false)
-      localStorage.setItem("cashtrack-goal-reached", "false")
       setShouldFireworks(false)
+      localStorage.setItem("cashtrack-goal-reached", "false")
     }
   }, [tips, goalAmount, addNotification, isWeeklyGoal])
 
@@ -229,30 +231,62 @@ export default function Dashboard() {
     }
   }, [isWeeklyGoal])
 
-  // Check for milestones and add notifications
+  // Check for milestones and add notifications (deduplicated via IndexedDB)
   useEffect(() => {
-    const progressData = getProgressData()
-    const percentage = progressData.progressPercentage
-    
-    // Milestone notifications
-    if (percentage >= 50 && percentage < 60) {
-      addNotification({
-        type: 'tip',
-        title: 'Halbzeit! 🎯',
-        message: `Du hast bereits ${Math.round(percentage)}% deines Ziels erreicht!`,
-        icon: '📈',
-        priority: 'medium'
-      })
-    } else if (percentage >= 75 && percentage < 85) {
-      addNotification({
-        type: 'motivation',
-        title: 'Fast geschafft! 💪',
-        message: `Nur noch ${Math.round(100 - percentage)}% bis zum Ziel!`,
-        icon: '🔥',
-        priority: 'medium'
-      })
-    }
-  }, [tips, goalAmount, isWeeklyGoal, addNotification])
+    const checkAndNotifyMilestone = async () => {
+      const progressData = getProgressData();
+      const percentage = progressData.progressPercentage;
+      const week = getCurrentWeekNumber();
+
+      // Helper to check if a milestone notification exists
+      async function milestoneNotificationExists(type: 'tip' | 'motivation', goalAmount: number, isWeeklyGoal: boolean, week: number) {
+        await db.init();
+        const all = await db.getAllNotifications();
+        const milestoneKey = isWeeklyGoal
+          ? `milestone-${type}-week-${week}-goal-${goalAmount}`
+          : `milestone-${type}-global-goal-${goalAmount}`;
+        return all.some(n => n.type === type && n.milestoneKey === milestoneKey);
+      }
+
+      // 50% milestone
+      if (percentage >= 50 && percentage < 60) {
+        const type: 'tip' = 'tip';
+        const milestoneKey = isWeeklyGoal
+          ? `milestone-${type}-week-${week}-goal-${goalAmount}`
+          : `milestone-${type}-global-goal-${goalAmount}`;
+        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week);
+        if (!exists) {
+          addNotification({
+            type,
+            title: 'Halbzeit! 🎯',
+            message: `Du hast bereits ${Math.round(percentage)}% deines Ziels erreicht!`,
+            icon: '📈',
+            priority: 'medium',
+            milestoneKey
+          });
+        }
+      }
+      // 75% milestone
+      else if (percentage >= 75 && percentage < 85) {
+        const type: 'motivation' = 'motivation';
+        const milestoneKey = isWeeklyGoal
+          ? `milestone-${type}-week-${week}-goal-${goalAmount}`
+          : `milestone-${type}-global-goal-${goalAmount}`;
+        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week);
+        if (!exists) {
+          addNotification({
+            type,
+            title: 'Fast geschafft! 💪',
+            message: `Nur noch ${Math.round(100 - percentage)}% bis zum Ziel!`,
+            icon: '🔥',
+            priority: 'medium',
+            milestoneKey
+          });
+        }
+      }
+    };
+    checkAndNotifyMilestone();
+  }, [tips, goalAmount, isWeeklyGoal, addNotification]);
 
   const getRecentShifts = () => {
     const shiftsByDate = tips.reduce(
@@ -524,6 +558,11 @@ export default function Dashboard() {
       localStorage.removeItem("cashtrack-fireworks-last")
     }
   }, [goalAmount, isWeeklyGoal])
+
+  // When switching goal types, clear the notification state for the other type
+  useEffect(() => {
+    localStorage.removeItem("cashtrack-goal-type-notified")
+  }, [isWeeklyGoal])
 
   return (
     <div className="px-4">
