@@ -5,35 +5,42 @@ import { Button } from "@/components/ui/button"
 import React, { useState } from "react";
 
 export default function Profile() {
-  // State for export/import UI and messages
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [exportData, setExportData] = useState("");
+  const [importData, setImportData] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Export: Show only Kopieren button
+  // Export: Show textarea with JSON and Kopieren button
   async function handleExport() {
+    if (!showExport) {
+      const tips = await getStoredTips();
+      setExportData(JSON.stringify(tips, null, 2));
+    }
     setShowExport((prev) => !prev);
     setShowImport(false);
     setMessage(null);
   }
   async function handleCopyExport() {
-    const tips = await getStoredTips();
-    await navigator.clipboard.writeText(JSON.stringify(tips, null, 2));
-    setMessage("Daten wurden in die Zwischenablage kopiert. Füge sie zum Sichern in eine Notiz oder E-Mail ein.");
+    try {
+      await navigator.clipboard.writeText(exportData);
+      setMessage("Daten wurden in die Zwischenablage kopiert. Füge sie zum Sichern in eine Notiz oder E-Mail ein.");
+    } catch {
+      setMessage("Bitte kopiere die Daten manuell aus dem Feld.");
+    }
     setShowModal(true);
   }
 
-  // Import: Show only Einfügen & Importieren button
+  // Import: Show textarea for pasting JSON and Importieren button
   function handleImport() {
     setShowImport((prev) => !prev);
     setShowExport(false);
     setMessage(null);
   }
-  async function handlePasteImport() {
+  async function handleImportData() {
     try {
-      const text = await navigator.clipboard.readText();
-      const importedTips = JSON.parse(text);
+      const importedTips = JSON.parse(importData);
       if (!Array.isArray(importedTips)) throw new Error("Ungültiges Format");
       if (!window.confirm("Alle aktuellen Trinkgeld-Daten werden durch die importierten Daten ersetzt. Fortfahren?")) return;
       await (await import("@/lib/db")).db.init();
@@ -44,8 +51,9 @@ export default function Profile() {
       setMessage("Import erfolgreich! Deine Trinkgeld-Daten wurden wiederhergestellt.");
       setShowModal(true);
       setShowImport(false);
+      setImportData("");
     } catch (e) {
-      setMessage("Fehler beim Importieren der Daten. Stelle sicher, dass du gültige CashTrack-Daten in der Zwischenablage hast.");
+      setMessage("Fehler beim Importieren der Daten. Stelle sicher, dass du gültige CashTrack-Daten eingefügt hast.");
       setShowModal(true);
     }
   }
@@ -53,7 +61,6 @@ export default function Profile() {
   // Cleanup duplicate tips
   async function handleCleanupTips() {
     const tips = await getStoredTips();
-    // Remove duplicates: keep only the first occurrence of each date+amount
     const seen = new Set();
     const deduped = tips.filter(tip => {
       const key = `${tip.date}|${tip.amount}`;
@@ -66,7 +73,6 @@ export default function Profile() {
       setShowModal(true);
       return;
     }
-    // Clear all tips and re-add deduped
     await (await import("@/lib/db")).db.init();
     await (await import("@/lib/db")).db.clearTips();
     for (const tip of deduped) {
@@ -160,14 +166,33 @@ export default function Profile() {
               </Button>
             </div>
             {showExport && (
-              <Button variant="secondary" onClick={handleCopyExport} className="w-full max-w-xs mt-2">
-                Kopieren
-              </Button>
+              <div className="w-full max-w-xs mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-col gap-2">
+                <label className="text-xs text-gray-600 mb-1">Daten zum Sichern kopieren:</label>
+                <textarea
+                  className="w-full h-32 p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  value={exportData}
+                  readOnly
+                  style={{ resize: "vertical" }}
+                />
+                <Button variant="secondary" onClick={handleCopyExport} className="w-full mt-1">
+                  Kopieren
+                </Button>
+              </div>
             )}
             {showImport && (
-              <Button variant="secondary" onClick={handlePasteImport} className="w-full max-w-xs mt-2">
-                Einfügen & Importieren
-              </Button>
+              <div className="w-full max-w-xs mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-col gap-2">
+                <label className="text-xs text-gray-600 mb-1">Hier exportierte Daten einfügen:</label>
+                <textarea
+                  className="w-full h-32 p-2 border border-gray-300 rounded text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  value={importData}
+                  onChange={e => setImportData(e.target.value)}
+                  placeholder="Hier exportierte Daten einfügen..."
+                  style={{ resize: "vertical" }}
+                />
+                <Button variant="secondary" onClick={handleImportData} className="w-full mt-1">
+                  Importieren
+                </Button>
+              </div>
             )}
             {showModal && message && (
               <div className="fixed inset-0 flex items-center justify-center z-50">
