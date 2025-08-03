@@ -401,12 +401,12 @@ export default function CalendarView() {
   ]
 
   return (
-    <div className="w-full">
+    <div className="px-4 min-h-full overflow-y-auto -webkit-overflow-scrolling-touch pb-8">
       {/* Month Selector */}
       {now && monthSlides.length > 0 && (
         <>
           <div className="mb-2">
-            <div ref={emblaRef} className="overflow-hidden">
+            <div ref={emblaRef} className="overflow-hidden touch-pan-y">
               <div className="flex" style={{ userSelect: 'none' }}>
                 {monthSlides.map((slide, idx) => (
                   <div
@@ -431,7 +431,7 @@ export default function CalendarView() {
       )}
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-2xl p-6 mb-6 overflow-visible">
+      <div className="bg-white rounded-2xl p-6 mb-6">
         <div className="grid grid-cols-7 gap-1 mb-4">
           {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
             <div key={day} className="text-center text-sm font-medium text-gray-500">
@@ -439,7 +439,7 @@ export default function CalendarView() {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1 min-h-fit auto-rows-fr">{renderCalendarDays()}</div>
+        <div className="grid grid-cols-7 gap-1">{renderCalendarDays()}</div>
       </div>
 
       {/* Selected Date Details */}

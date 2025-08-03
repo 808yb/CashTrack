@@ -14,7 +14,7 @@ import { migrateToIndexedDB } from "@/lib/migrate"
 const navigationConfig = [
   { path: '/', icon: Home, label: 'Home', index: 0 },
   { path: '/add-tips', icon: Plus, label: 'Add Tips', index: 1 },
-  { path: '/calendar', icon: Calendar, label: 'Calendar', index: 2 },
+  { path: '/calendar', icon: Calendar, label: 'Calendar', index: 2 }
 ];
 
 function AnimatedLayout({ children }: { children: React.ReactNode }) {
@@ -43,17 +43,17 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="flex flex-col min-h-screen bg-gray-200">
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-gray-200">
         <div className="max-w-md mx-auto">
-          <div className="flex justify-between items-center p-3 pt-6">
-            <h1 className="text-xl font-bold text-black">CashTrack</h1>
+          <div className="flex justify-between items-center p-4 pt-8">
+            <h1 className="text-2xl font-bold text-black">CashTrack</h1>
             <div className="flex items-center gap-2">
               <NotificationBell />
               <Link href="/profile" prefetch={false}>
-                <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
+                  <User className="w-6 h-6 text-white" />
                 </div>
               </Link>
             </div>
@@ -61,42 +61,44 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content Area - Full webpage scroll */}
-      <main className="pt-20 pb-24">
-        <div className="max-w-md mx-auto px-4">
+      {/* Main Content Area */}
+      <main className="flex-1 pt-24 pb-24 overflow-y-auto">
+        <div className="max-w-md mx-auto relative">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
 
       {/* Fixed Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-md mx-auto">
-          <div className="flex justify-around py-3">
-            {navigationConfig.map(({ path, icon: Icon, index }) => (
-              <button
-                key={path}
-                className={`flex flex-col items-center transition-colors ${
-                  path === '/add-tips'
-                    ? ''
-                    : isActive(path)
-                    ? 'text-blue-600'
-                    : 'text-black'
-                }`}
-                onClick={() => handleNavigation(path, index)}
-              >
-                {path === '/add-tips' ? (
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                      isActive(path) ? 'bg-blue-600' : 'bg-black'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 text-white" />
-                  </div>
-                ) : (
-                  <Icon className="w-5 h-5" />
-                )}
-              </button>
-            ))}
+          <div className="bg-white border-t border-gray-200 shadow-lg">
+            <div className="flex justify-around py-4">
+              {navigationConfig.map(({ path, icon: Icon, index }) => (
+                <button
+                  key={path}
+                  className={`flex flex-col items-center transition-colors ${
+                    path === '/add-tips'
+                      ? ''
+                      : isActive(path)
+                      ? 'text-blue-600'
+                      : 'text-black'
+                  }`}
+                  onClick={() => handleNavigation(path, index)}
+                >
+                  {path === '/add-tips' ? (
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        isActive(path) ? 'bg-blue-600' : 'bg-black'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                  ) : (
+                    <Icon className="w-6 h-6" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </nav>
