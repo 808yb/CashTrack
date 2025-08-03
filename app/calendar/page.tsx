@@ -401,7 +401,7 @@ export default function CalendarView() {
   ]
 
   return (
-    <div className="px-4">
+    <div className="px-4 pb-8 w-full">
       {/* Month Selector */}
       {now && monthSlides.length > 0 && (
         <>

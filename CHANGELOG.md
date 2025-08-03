@@ -68,5 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a bug in TagManager where adding a new tag would cause default tags to disappear. TagManager now correctly preserves default tags when adding, editing, or deleting tags.
 - Default tags are now only re-inserted if the tag store is completely empty, allowing users to delete default tags and have them stay deleted unless all tags are removed.
+- Fixed tip persistence issues by bumping IndexedDB version to 2 and adding missing `tags` field to TipEntry type
+- Fixed async state update in handleEditTag function to properly await tag updates
 
 Note: This changelog was created to start tracking changes. Previous changes have been aggregated into the initial entry. 

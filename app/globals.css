@@ -136,6 +136,25 @@ a {
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Ensure proper scrolling on iOS */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix for iOS Safari viewport issues */
+  .min-h-full {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Ensure proper touch scrolling */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* View Transition Animations */
 @keyframes fade-slide-in-right {
   from { opacity: 0; transform: translateX(40px); }
