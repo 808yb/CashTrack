@@ -88,7 +88,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="px-4">
+    <div>
       <div className="bg-white rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-black mb-6">Profil</h2>
         <div className="space-y-6 text-gray-800">

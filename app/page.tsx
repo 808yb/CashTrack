@@ -565,7 +565,7 @@ export default function Dashboard() {
   }, [isWeeklyGoal])
 
   return (
-    <div className="px-4">
+    <div>
       {/* Add the styles */}
       {/* <style>{progressBarStyles}</style> */}
       {/* Fireworks celebration */}
@@ -669,7 +669,7 @@ export default function Dashboard() {
           </div>
 
           {/* Progress Bar Section - Revert to original */}
-          <div className="mb-6">
+          <div className="mb-12">
             <h3 className="text-xl font-bold text-black mb-4">Ziel</h3>
             <div className="bg-white rounded-xl p-4">
               <div className="mb-4">
@@ -787,52 +787,13 @@ export default function Dashboard() {
           </Dialog>
 
           {/* Monthly Tips with Month Selector */}
-          <div>
+          <div className="mb-8">
             {getMonthTips(selectedMonth.year, selectedMonth.month) === 0 && (
               <div className="text-gray-500 text-center py-4">Noch keine Einträge in diesem Monat</div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">
-        <div className="flex justify-around py-4">
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '0')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/'))
-            } else {
-              router.push('/')
-            }
-          }}>
-            <Home className="w-6 h-6 text-black" />
-          </button>
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '1')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/add-tips'))
-            } else {
-              router.push('/add-tips')
-            }
-          }}>
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-              <Plus className="w-5 h-5 text-white" />
-            </div>
-          </button>
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '2')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/calendar'))
-            } else {
-              router.push('/calendar')
-            }
-          }}>
-            <Calendar className="w-6 h-6 text-black" />
-          </button>
-        </div>
-      </div>
-
 
     </div>
   )

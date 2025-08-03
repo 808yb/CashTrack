@@ -236,7 +236,7 @@ export default function AddTips() {
   }
 
   return (
-    <div className="px-4">
+    <div>
       {/* Current Total */}
       <div className="bg-white rounded-2xl p-6 mb-6">
         <div className="flex justify-between items-center mb-6">

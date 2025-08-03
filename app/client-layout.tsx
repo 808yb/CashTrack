@@ -43,7 +43,7 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-200">
+    <div className="min-h-screen bg-gray-200">
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-gray-200">
         <div className="max-w-md mx-auto">
@@ -62,8 +62,8 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-24 pb-24">
-        <div className="max-w-md mx-auto h-full relative overflow-y-auto">
+      <main className="pt-24 pb-32">
+        <div className="max-w-md mx-auto px-4">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
