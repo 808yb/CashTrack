@@ -237,15 +237,14 @@ export default function AddTips() {
   }
 
   const handleEndShift = () => {
-    const today = getTodayKey()
-    endShift(today, shiftNote, selectedTags)
+    endShift(todayTotal, shiftNote, selectedTags)
     setShiftNote("")
     setSelectedTags([])
     setShowEndShiftDialog(false)
     
     // Show success notification
     addNotification({
-      type: 'info',
+      type: 'achievement',
       title: 'Schicht beendet! 📝',
       message: `Schicht für ${formatDate(new Date())} wurde gespeichert.`,
       icon: '✅',
@@ -255,8 +254,10 @@ export default function AddTips() {
 
   const handleCustomTag = async () => {
     if (customTagName.trim()) {
-      const newTag = await saveTag(customTagName.trim(), customTagColor)
-      setAvailableTags(prev => [...prev, newTag])
+      await saveTag({ name: customTagName.trim(), color: customTagColor })
+      // Reload tags after saving
+      const storedTags = await getStoredTags()
+      setAvailableTags(storedTags)
       setCustomTagName("")
       setCustomTagColor("bg-purple-500")
       setShowCustomTagDialog(false)
@@ -269,8 +270,8 @@ export default function AddTips() {
   }
 
   const handleEditTag = async (tagId: string, newName: string, newColor: string) => {
-    const updatedTag = await updateTag(tagId, newName, newColor)
-    setAvailableTags(prev => prev.map(tag => tag.id === tagId ? updatedTag : tag))
+    await updateTag(tagId, { name: newName, color: newColor })
+    setAvailableTags(prev => prev.map(tag => tag.id === tagId ? { ...tag, name: newName, color: newColor } : tag))
   }
 
   const toggleTag = (tagId: string) => {
@@ -297,14 +298,14 @@ export default function AddTips() {
   return (
     <div>
       {/* Current Total */}
-      <div className="bg-white rounded-2xl p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <div className="text-lg font-medium text-black">Trinkgeld</div>
-            <div className="text-3xl font-bold text-black">{formatCurrency(todayTotal)}</div>
+            <div className="text-base font-medium text-black">Trinkgeld</div>
+            <div className="text-2xl font-bold text-black">{formatCurrency(todayTotal)}</div>
           </div>
           <div className="text-right">
-            <div className="text-gray-600">{formatDate(new Date())}</div>
+            <div className="text-gray-600 text-sm">{formatDate(new Date())}</div>
           </div>
         </div>
 
@@ -331,45 +332,45 @@ export default function AddTips() {
       </div>
 
       {/* Tip Buttons Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {/* +1€ */}
         <Button
           variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
+          className="h-24 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
           onClick={() => addTip(tipValues.one)}
         >
-          <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin1Icon width={48} height={48} />
+          <div className="text-lg font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+          <Coin1Icon width={40} height={40} />
         </Button>
 
         {/* +2,50€ */}
         <Button
           variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
+          className="h-24 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
           onClick={() => addTip(tipValues.two)}
         >
-          <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin2Icon width={48} height={48} />
+          <div className="text-lg font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+          <Coin2Icon width={40} height={40} />
         </Button>
 
         {/* +5€ */}
         <Button
           variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
+          className="h-24 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
           onClick={() => addTip(tipValues.five)}
         >
-          <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin5Icon width={48} height={48} />
+          <div className="text-lg font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+          <Coin5Icon width={40} height={40} />
         </Button>
 
         {/* Custom Amount */}
         <Button
           variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
+          className="h-24 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
           onClick={() => setShowCustomInput(true)}
         >
-          <div className="text-xl font-bold text-black">Freibetrag</div>
-          <Coin5Icon width={48} height={48} />
+          <div className="text-lg font-bold text-black">Freibetrag</div>
+          <Coin5Icon width={40} height={40} />
         </Button>
       </div>
 

@@ -43,9 +43,9 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
   return (
-    <div className="bg-gray-200 min-h-screen">
+    <div className="min-h-screen bg-gray-200">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-gray-200">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-gray-200">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center p-3 pt-6">
             <h1 className="text-xl font-bold text-black">CashTrack</h1>
@@ -59,17 +59,17 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content Area - Updated with better spacing */}
-      <div className="pt-20 pb-24 min-h-screen">
-        <div className="max-w-md mx-auto px-4 pb-4">
+      {/* Main Content Area - Full webpage scroll */}
+      <main className="pt-20 pb-24">
+        <div className="max-w-md mx-auto px-4">
           <PageTransition>{children}</PageTransition>
         </div>
-      </div>
+      </main>
 
       {/* Fixed Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
         <div className="max-w-md mx-auto">
           <div className="flex justify-around py-3">
             {navigationConfig.map(({ path, icon: Icon, index }) => (
@@ -99,7 +99,7 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </div>
-      </div>
+      </nav>
     </div>
   );
 }
@@ -120,4 +120,4 @@ export default function ClientLayout({
       <Toaster position="top-center" richColors closeButton />
     </NotificationProvider>
   )
-}
+} 

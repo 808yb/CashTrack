@@ -571,8 +571,8 @@ export default function Dashboard() {
       {/* Fireworks celebration */}
       <Fireworks fire={shouldFireworks} />
       {/* Main Content */}
-      <div className="space-y-4">
-        <div className="bg-white rounded-2xl p-4">
+      <div>
+        <div className="bg-white rounded-2xl p-4 mb-4">
           <h2 className="text-xl font-bold text-black mb-3">Dashboard</h2>
           {/* Today's Tips */}
           <div className="bg-gray-200 rounded-xl p-3 mb-4">
@@ -668,8 +668,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Bar Section */}
-          <div className="mb-4">
+          {/* Progress Bar Section - Optimized for smaller screens */}
+          <div className="mb-6">
             <h3 className="text-lg font-bold text-black mb-3">Ziel</h3>
             <div className="bg-white rounded-xl p-3">
               <div className="mb-3">
