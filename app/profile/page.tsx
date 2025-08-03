@@ -145,7 +145,7 @@ export default function Profile() {
               Ich freue mich über jedes Feedback!
             </p>
             <p className="text-right mt-2 text-gray-600">
-              <span className="text-xs text-gray-500">(v1.2.3)</span>
+              <span className="text-xs text-gray-500">(v1.2.0)</span>
             </p>
           </div>
         </div>

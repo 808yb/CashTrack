@@ -401,7 +401,7 @@ export default function CalendarView() {
   ]
 
   return (
-    <div className="px-4 min-h-full pb-8">
+    <div className="px-4 min-h-full overflow-y-auto -webkit-overflow-scrolling-touch pb-8">
       {/* Month Selector */}
       {now && monthSlides.length > 0 && (
         <>

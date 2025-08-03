@@ -28,31 +28,6 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // Reset scroll position when pathname changes
-  useEffect(() => {
-    // Use a timeout to ensure the page transition is complete
-    const timeoutId = setTimeout(() => {
-      // Reset scroll to top when route changes
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      
-      // Also reset scroll on the main element for better iOS compatibility
-      const mainElement = document.querySelector('main');
-      if (mainElement) {
-        mainElement.scrollTop = 0;
-      }
-      
-      // Reset scroll on any scrollable containers within the page
-      const scrollableElements = document.querySelectorAll('.overflow-y-auto, .overflow-auto');
-      scrollableElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.scrollTop = 0;
-        }
-      });
-    }, 100); // Small delay to ensure transition is complete
-
-    return () => clearTimeout(timeoutId);
-  }, [pathname]);
-
   const handleNavigation = useCallback((path: string, index: number) => {
     if (pathname === path) return;
     

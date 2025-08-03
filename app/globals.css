@@ -130,13 +130,6 @@ a {
 html, body {
   -webkit-overflow-scrolling: touch;
   overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-/* Smooth scrolling for main content */
-main {
-  -webkit-overflow-scrolling: touch;
-  overflow-scrolling: touch;
 }
 
 /* Custom scrollbar for webkit browsers */
