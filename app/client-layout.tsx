@@ -87,8 +87,8 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-24 pb-24 overflow-y-auto h-full">
-        <div className="max-w-md mx-auto relative h-full">
+      <main className="flex-1 pt-24 pb-24 overflow-y-auto">
+        <div className="max-w-md mx-auto relative">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
