@@ -132,6 +132,32 @@ html, body {
   overflow-scrolling: touch;
 }
 
+/* Mobile viewport height fix */
+html {
+  height: 100%;
+}
+
+body {
+  height: 100vh; /* Fallback */
+  height: calc(var(--vh, 1vh) * 100);
+  min-height: 100vh; /* Fallback */
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* Page container fix */
+.page-container {
+  min-height: 100vh; /* Fallback */
+  min-height: calc(var(--vh, 1vh) * 100);
+  padding-bottom: 120px; /* Account for bottom navigation */
+}
+
+/* Ensure proper scrolling on page transitions */
+.page-content {
+  min-height: calc(calc(var(--vh, 1vh) * 100) - 120px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
   width: 6px;

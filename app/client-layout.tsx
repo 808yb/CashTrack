@@ -10,6 +10,7 @@ import Link from "next/link"
 import NotificationBell from "@/components/NotificationBell"
 import { useCallback, useEffect, useState } from "react"
 import { migrateToIndexedDB } from "@/lib/migrate"
+import { useMobileViewport } from "@/hooks/use-mobile"
 
 const navigationConfig = [
   { path: '/', icon: Home, label: 'Home', index: 0 },
@@ -28,6 +29,9 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // Use the mobile viewport hook
+  useMobileViewport();
+
   const handleNavigation = useCallback((path: string, index: number) => {
     if (pathname === path) return;
     
@@ -43,7 +47,7 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
   const isActive = useCallback((path: string) => pathname === path, [pathname]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-200">
+    <div className="flex flex-col min-h-screen bg-gray-200" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-gray-200">
         <div className="max-w-md mx-auto">
@@ -62,8 +66,8 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-24 pb-24 overflow-y-auto">
-        <div className="max-w-md mx-auto relative">
+      <main className="flex-1 pt-24 pb-24 overflow-y-auto" style={{ minHeight: 'calc(calc(var(--vh, 1vh) * 100) - 120px)' }}>
+        <div className="max-w-md mx-auto relative h-full">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>
