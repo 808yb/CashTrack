@@ -17,8 +17,7 @@ import toast from 'react-hot-toast'
 import Fireworks from "@/components/ui/Fireworks"
 import { useRouter } from "next/navigation"
 import { useCountAnimation } from "@/hooks/useCountAnimation"
-import { db } from "@/lib/db"
-import { useMobileViewport } from "@/hooks/use-mobile"
+import { db } from "@/lib/db";
 
 // Add this CSS class at the top of your file
 const progressBarStyles = ``;
@@ -31,10 +30,6 @@ interface TipEntry {
 
 export default function Dashboard() {
   const router = useRouter()
-  
-  // Use mobile viewport hook
-  useMobileViewport()
-  
   const [tips, setTips] = useState<TipEntry[]>([])
   const [todayTotal, setTodayTotal] = useState(0)
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -570,7 +565,7 @@ export default function Dashboard() {
   }, [isWeeklyGoal])
 
   return (
-    <div className="px-4 page-content">
+    <div className="px-4">
       {/* Add the styles */}
       {/* <style>{progressBarStyles}</style> */}
       {/* Fireworks celebration */}

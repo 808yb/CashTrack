@@ -14,14 +14,10 @@ import Coin2Icon from "@/ButtonIcons/Coin2Icon"
 import Coin5Icon from "@/ButtonIcons/CustomCoinsIcon"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
-import { useMobileViewport } from "@/hooks/use-mobile"
 
 export default function AddTips() {
   const router = useRouter()
   const { addNotification } = useNotifications()
-  
-  // Use mobile viewport hook
-  useMobileViewport()
   const [todayTotal, setTodayTotal] = useState(0)
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [customAmount, setCustomAmount] = useState("")
@@ -240,7 +236,7 @@ export default function AddTips() {
   }
 
   return (
-    <div className="px-4 page-content">
+    <div className="px-4">
       {/* Current Total */}
       <div className="bg-white rounded-2xl p-6 mb-6">
         <div className="flex justify-between items-center mb-6">

@@ -13,7 +13,6 @@ import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 import { useRouter } from "next/navigation"
 import { Tag } from "@/lib/types"
-import { useMobileViewport } from "@/hooks/use-mobile"
 
 interface TipEntry {
   date: string
@@ -32,9 +31,6 @@ interface DaySummary {
 export default function CalendarView() {
   const { addNotification } = useNotifications()
   const router = useRouter()
-  
-  // Use mobile viewport hook
-  useMobileViewport()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tips, setTips] = useState<TipEntry[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -405,7 +401,7 @@ export default function CalendarView() {
   ]
 
   return (
-    <div className="px-4 page-content">
+    <div className="px-4 min-h-full pb-8">
       {/* Month Selector */}
       {now && monthSlides.length > 0 && (
         <>

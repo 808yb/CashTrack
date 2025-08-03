@@ -25,7 +25,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
   // Handle profile transitions separately with just fade
   if (isProfileTransition) {
     return (
-      <div className="w-full min-h-screen bg-gray-200">
+      <div className="w-full h-full bg-gray-200">
         <motion.div
           key={pathname}
           initial={{ opacity: 0 }}
@@ -45,7 +45,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
   const direction = currentIndex > prevIndex ? 'forward' : 'backward';
 
   return (
-    <div className="relative w-full min-h-screen bg-gray-200 overflow-hidden">
+    <div className="relative w-full h-full bg-gray-200 overflow-hidden">
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={pathname}
@@ -77,7 +77,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
             top: 0,
             left: 0
           }}
-          className="w-full min-h-screen"
+          className="w-full h-full"
         >
           {children}
         </motion.div>
