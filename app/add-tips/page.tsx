@@ -15,6 +15,91 @@ import Coin5Icon from "@/ButtonIcons/CustomCoinsIcon"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
 
+// Tag Management Item Component
+function TagManageItem({ 
+  tag, 
+  onEdit, 
+  onDelete, 
+  tagColors 
+}: { 
+  tag: Tag
+  onEdit: (id: string, name: string, color: string) => void
+  onDelete: (id: string) => void
+  tagColors: string[]
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(tag.name)
+  const [editColor, setEditColor] = useState(tag.color)
+
+  const handleSave = () => {
+    if (editName.trim()) {
+      onEdit(tag.id, editName.trim(), editColor)
+      setIsEditing(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setEditName(tag.name)
+    setEditColor(tag.color)
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          className="flex-1"
+        />
+        <div className="flex gap-1">
+          {tagColors.slice(0, 4).map((color) => (
+            <button
+              key={color}
+              className={`w-6 h-6 rounded-full ${color} border-2 ${
+                editColor === color ? 'border-black' : 'border-transparent'
+              }`}
+              onClick={() => setEditColor(color)}
+            />
+          ))}
+        </div>
+        <Button size="sm" onClick={handleSave}>
+          ✓
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          ✕
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+      <div className="flex items-center gap-3">
+        <div className={`w-4 h-4 rounded-full ${tag.color}`}></div>
+        <span className="font-medium">{tag.name}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setIsEditing(true)}
+        >
+          Bearbeiten
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onDelete(tag.id)}
+          className="text-red-600 hover:text-red-700"
+        >
+          Löschen
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export default function AddTips() {
   const router = useRouter()
   const { addNotification } = useNotifications()
@@ -98,10 +183,10 @@ export default function AddTips() {
         addNotification({
           type: 'achievement',
           title: 'Meilenstein erreicht! 🎯',
-          message: `Du hast ${milestone}€ Trinkgeld für heute gesammelt!`,
-          icon: '💰',
+          message: `${milestone}€ Trinkgeld heute gesammelt!`,
+          icon: '🎉',
           priority: 'medium'
-        });
+        })
       }
     } catch (error) {
       console.error('Error saving tip:', error);
@@ -109,91 +194,69 @@ export default function AddTips() {
   }
 
   const handleCustomTip = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = customAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
-      
-      if (!isNaN(amount) && amount > 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        addTip(roundedAmount);
-        setCustomAmount("");
-        setShowCustomInput(false);
-      } else {
-        console.error('Invalid custom amount:', customAmount);
-      }
-    } catch (error) {
-      console.error('Error processing custom tip:', error);
+    const amount = Number.parseFloat(customAmount.replace(",", "."))
+    if (!isNaN(amount) && amount > 0) {
+      addTip(amount)
+      setCustomAmount("")
+      setShowCustomInput(false)
     }
   }
 
   const handleEditTips = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = editAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
+    const amount = Number.parseFloat(editAmount.replace(",", "."))
+    if (!isNaN(amount) && amount >= 0) {
+      // Clear all tips for today and set the new total
+      const today = getTodayKey()
+      const tips = JSON.parse(localStorage.getItem("cashtrack-tips") || "[]")
+      const filteredTips = tips.filter((tip: any) => tip.date !== today)
       
-      if (!isNaN(amount) && amount >= 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        // Use endShift to consolidate and update today's tips
-        endShift(roundedAmount, shiftNote, selectedTags); // Pass current note and tags
-        setTodayTotal(roundedAmount);
-        setEditAmount("");
-        setShowEditDialog(false);
-      } else {
-        console.error('Invalid edit amount:', editAmount);
+      if (amount > 0) {
+        // Add a single tip with the new total
+        const newTip = {
+          date: today,
+          amount: amount,
+          timestamp: Date.now()
+        }
+        filteredTips.push(newTip)
       }
-    } catch (error) {
-      console.error('Error editing tips:', error);
+      
+      localStorage.setItem("cashtrack-tips", JSON.stringify(filteredTips))
+      setTodayTotal(amount)
+      setEditAmount("")
+      setShowEditDialog(false)
     }
   }
 
   const handleEditTipValues = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = editTipAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
-      
-      if (!isNaN(amount) && amount > 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        setTipValues(prev => ({ ...prev, [selectedTipButton]: roundedAmount }));
-        setEditTipAmount("");
-        setShowEditTipDialog(false);
-      } else {
-        console.error('Invalid tip value amount:', editTipAmount);
-      }
-    } catch (error) {
-      console.error('Error editing tip values:', error);
+    const amount = Number.parseFloat(editTipAmount.replace(",", "."))
+    if (!isNaN(amount) && amount > 0) {
+      setTipValues(prev => ({ ...prev, [selectedTipButton]: amount }))
+      setEditTipAmount("")
+      setShowEditTipDialog(false)
     }
   }
 
   const handleEndShift = () => {
-    // End the shift with the current total and optional note and tags
-    const noteToSave = shiftNote.trim() || undefined
-    endShift(todayTotal, noteToSave, selectedTags)
-
-    // Reset UI state
-    setTodayTotal(0)
-    setShowEndShiftDialog(false)
+    const today = getTodayKey()
+    endShift(today, shiftNote, selectedTags)
     setShiftNote("")
     setSelectedTags([])
-
-    // Navigate back to dashboard
-    router.push("/")
+    setShowEndShiftDialog(false)
+    
+    // Show success notification
+    addNotification({
+      type: 'info',
+      title: 'Schicht beendet! 📝',
+      message: `Schicht für ${formatDate(new Date())} wurde gespeichert.`,
+      icon: '✅',
+      priority: 'low'
+    })
   }
 
   const handleCustomTag = async () => {
     if (customTagName.trim()) {
-      const newTag = {
-        name: customTagName.trim(),
-        color: customTagColor,
-      }
-      await saveTag(newTag)
-      const updatedTags = await getStoredTags()
-      setAvailableTags(updatedTags)
+      const newTag = await saveTag(customTagName.trim(), customTagColor)
+      setAvailableTags(prev => [...prev, newTag])
       setCustomTagName("")
       setCustomTagColor("bg-purple-500")
       setShowCustomTagDialog(false)
@@ -202,24 +265,20 @@ export default function AddTips() {
 
   const handleDeleteTag = async (tagId: string) => {
     await deleteTag(tagId)
-    const updatedTags = await getStoredTags()
-    setAvailableTags(updatedTags)
-    // Also remove from selected tags if it was selected
-    setSelectedTags(selectedTags.filter(id => id !== tagId))
+    setAvailableTags(prev => prev.filter(tag => tag.id !== tagId))
   }
 
   const handleEditTag = async (tagId: string, newName: string, newColor: string) => {
-    await updateTag(tagId, { name: newName, color: newColor })
-    const updatedTags = await getStoredTags()
-    setAvailableTags(updatedTags)
+    const updatedTag = await updateTag(tagId, newName, newColor)
+    setAvailableTags(prev => prev.map(tag => tag.id === tagId ? updatedTag : tag))
   }
 
   const toggleTag = (tagId: string) => {
-    if (selectedTags.includes(tagId)) {
-      setSelectedTags(selectedTags.filter(id => id !== tagId))
-    } else {
-      setSelectedTags([...selectedTags, tagId])
-    }
+    setSelectedTags(prev => 
+      prev.includes(tagId) 
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    )
   }
 
   // Input validation for numbers and comma only
@@ -356,73 +415,78 @@ export default function AddTips() {
 
       {/* End Shift Dialog */}
       <Dialog open={showEndShiftDialog} onOpenChange={setShowEndShiftDialog}>
-        <DialogContent className="max-w-sm mx-auto" aria-describedby="end-shift-desc">
+        <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle>Schicht beenden</DialogTitle>
-            <p id="end-shift-desc" className="text-sm text-gray-600">Beenden Sie Ihre Schicht und speichern Sie das Trinkgeld</p>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-lg font-medium">Trinkgeld: {formatCurrency(todayTotal)}</div>
-              <div className="text-gray-600">{formatDate(new Date())}</div>
-            </div>
-
-            <div className="text-lg font-medium">Schicht beenden?</div>
-
             <div>
-              <label className="block text-sm font-medium mb-2">Notiz (optional):</label>
+              <label className="block text-sm font-medium mb-2">Notiz (optional)</label>
               <Textarea
-                placeholder="z.B. Schichtleitung"
+                placeholder="Wie war die Schicht?"
                 value={shiftNote}
                 onChange={(e) => setShiftNote(e.target.value)}
-                className="bg-gray-200"
+                rows={3}
               />
             </div>
-
+            
             {/* Tags Section */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-black">Tags auswählen</label>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowManageTagsDialog(true)}
-                    className="text-xs"
-                  >
-                    Tags verwalten
-                  </Button>
-                </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">Tags</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowManageTagsDialog(true)}
+                >
+                  Verwalten
+                </Button>
               </div>
+              
+              {/* Selected Tags */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedTags.map(tagId => {
+                  const tag = availableTags.find(t => t.id === tagId)
+                  return tag ? (
+                    <span
+                      key={tagId}
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tag.color} text-white`}
+                    >
+                      {tag.name}
+                      <button
+                        onClick={() => toggleTag(tagId)}
+                        className="ml-1 hover:text-gray-200"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : null
+                })}
+              </div>
+              
+              {/* Available Tags */}
               <div className="flex flex-wrap gap-2">
-                {availableTags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    onClick={() => toggleTag(tag.id)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors border-2 ${
-                      tag.color
-                    } ${
-                      selectedTags.includes(tag.id)
-                        ? "text-white border-black ring-2 ring-black ring-offset-1"
-                        : "text-white border-transparent hover:border-gray-300"
-                    }`}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+                {availableTags
+                  .filter(tag => !selectedTags.includes(tag.id))
+                  .slice(0, 6)
+                  .map(tag => (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTag(tag.id)}
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${tag.color} text-white hover:opacity-80`}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
               </div>
             </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1 bg-gray-200 text-black"
-                onClick={() => setShowEndShiftDialog(false)}
-              >
-                Nein
+            
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowEndShiftDialog(false)}>
+                Abbrechen
               </Button>
-              <Button variant="default" className="flex-1" onClick={handleEndShift}>
-                Ja
+              <Button className="flex-1" onClick={handleEndShift}>
+                Beenden
               </Button>
             </div>
           </div>
@@ -431,21 +495,16 @@ export default function AddTips() {
 
       {/* Custom Tag Dialog */}
       <Dialog open={showCustomTagDialog} onOpenChange={setShowCustomTagDialog}>
-        <DialogContent className="max-w-sm mx-auto" aria-describedby="custom-tag-desc">
+        <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle>Neuen Tag erstellen</DialogTitle>
-            <p id="custom-tag-desc" className="text-sm text-gray-600">Erstellen Sie einen neuen Tag</p>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Tag Name</label>
-              <Input
-                placeholder="z.B. Bonus"
-                value={customTagName}
-                onChange={(e) => setCustomTagName(e.target.value)}
-              />
-            </div>
-            
+            <Input
+              placeholder="Tag Name"
+              value={customTagName}
+              onChange={(e) => setCustomTagName(e.target.value)}
+            />
             <div>
               <label className="block text-sm font-medium mb-2">Farbe</label>
               <div className="grid grid-cols-4 gap-2">
@@ -460,9 +519,8 @@ export default function AddTips() {
                 ))}
               </div>
             </div>
-
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCustomTagDialog(false)}>
+              <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowCustomTagDialog(false)}>
                 Abbrechen
               </Button>
               <Button className="flex-1" onClick={handleCustomTag}>
@@ -475,10 +533,9 @@ export default function AddTips() {
 
       {/* Manage Tags Dialog */}
       <Dialog open={showManageTagsDialog} onOpenChange={setShowManageTagsDialog}>
-        <DialogContent className="max-w-sm mx-auto" aria-describedby="manage-tags-desc">
+        <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle>Tags verwalten</DialogTitle>
-            <p id="manage-tags-desc" className="text-sm text-gray-600">Verwalten Sie Ihre vorhandenen Tags</p>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-gray-600 mb-4">
@@ -582,91 +639,6 @@ export default function AddTips() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-// Tag Management Item Component
-function TagManageItem({ 
-  tag, 
-  onEdit, 
-  onDelete, 
-  tagColors 
-}: { 
-  tag: Tag
-  onEdit: (id: string, name: string, color: string) => void
-  onDelete: (id: string) => void
-  tagColors: string[]
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editName, setEditName] = useState(tag.name)
-  const [editColor, setEditColor] = useState(tag.color)
-
-  const handleSave = () => {
-    if (editName.trim()) {
-      onEdit(tag.id, editName.trim(), editColor)
-      setIsEditing(false)
-    }
-  }
-
-  const handleCancel = () => {
-    setEditName(tag.name)
-    setEditColor(tag.color)
-    setIsEditing(false)
-  }
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
-        <Input
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          className="flex-1"
-        />
-        <div className="flex gap-1">
-          {tagColors.slice(0, 4).map((color) => (
-            <button
-              key={color}
-              className={`w-6 h-6 rounded-full ${color} border-2 ${
-                editColor === color ? 'border-black' : 'border-transparent'
-              }`}
-              onClick={() => setEditColor(color)}
-            />
-          ))}
-        </div>
-        <Button size="sm" onClick={handleSave}>
-          ✓
-        </Button>
-        <Button size="sm" variant="outline" onClick={handleCancel}>
-          ✕
-        </Button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
-      <div className="flex items-center gap-3">
-        <div className={`w-4 h-4 rounded-full ${tag.color}`}></div>
-        <span className="font-medium">{tag.name}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setIsEditing(true)}
-        >
-          Bearbeiten
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onDelete(tag.id)}
-          className="text-red-600 hover:text-red-700"
-        >
-          Löschen
-        </Button>
-      </div>
     </div>
   )
 }

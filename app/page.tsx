@@ -571,18 +571,18 @@ export default function Dashboard() {
       {/* Fireworks celebration */}
       <Fireworks fire={shouldFireworks} />
       {/* Main Content */}
-      <div className="pb-4">
-        <div className="bg-white rounded-2xl p-6 mb-6">
-          <h2 className="text-2xl font-bold text-black mb-4">Dashboard</h2>
+      <div className="space-y-4">
+        <div className="bg-white rounded-2xl p-4">
+          <h2 className="text-xl font-bold text-black mb-3">Dashboard</h2>
           {/* Today's Tips */}
-          <div className="bg-gray-200 rounded-xl p-4 mb-6">
+          <div className="bg-gray-200 rounded-xl p-3 mb-4">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-lg font-medium text-black">Trinkgeld heute</div>
-                <div className="text-3xl font-bold text-black">{formatCurrency(animatedTodayTotal)}</div>
+                <div className="text-base font-medium text-black">Trinkgeld heute</div>
+                <div className="text-2xl font-bold text-black">{formatCurrency(animatedTodayTotal)}</div>
               </div>
               <div className="text-right">
-                <div className="text-gray-600">{formatDate(new Date())}</div>
+                <div className="text-gray-600 text-sm">{formatDate(new Date())}</div>
               </div>
             </div>
           </div>
@@ -599,11 +599,11 @@ export default function Dashboard() {
                         className="flex-shrink-0 w-full px-2"
                         style={{ minWidth: '100%', maxWidth: '100%' }}
                       >
-                        <div className="bg-gray-200 rounded-2xl px-4 py-3 flex flex-col items-center">
-                          <span className="flex-1 text-center text-lg font-medium mb-1">
+                        <div className="bg-gray-200 rounded-2xl px-3 py-2 flex flex-col items-center">
+                          <span className="flex-1 text-center text-base font-medium mb-1">
                             Trinkgeld im {monthNames[slide.month]} {slide.year}
                           </span>
-                          <div className="text-3xl font-bold text-center">
+                          <div className="text-2xl font-bold text-center">
                             {formatCurrency(animatedMonthTotal)}
                           </div>
                         </div>
@@ -613,25 +613,25 @@ export default function Dashboard() {
                 </div>
               </div>
               {showSwipeLabel && (
-                <div className="text-xs text-gray-500 mb-4 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
+                <div className="text-xs text-gray-500 mb-3 text-center">Nach rechts wischen, um den Vormonat zu sehen</div>
               )}
             </>
           )}
 
           {/* Statistics */}
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-black mb-2">Statistik</h3>
-            <div className="text-black">
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-black mb-2">Statistik</h3>
+            <div className="text-black text-sm">
               <div>Schichten: {getMonthShifts(selectedMonth.year, selectedMonth.month)}</div>
               <div>Höchste Trinkgeld von heute: {formatCurrency(stats.highestTipToday)}</div>
             </div>
           </div>
 
           {/* Weekly Tips Chart */}
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-black mb-4">Wöchentliche Übersicht</h3>
-            <div className="bg-white rounded-xl p-4">
-              <ResponsiveContainer width="100%" height={200}>
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-black mb-3">Wöchentliche Übersicht</h3>
+            <div className="bg-white rounded-xl p-3">
+              <ResponsiveContainer width="100%" height={150}>
                 <BarChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <XAxis 
                     dataKey="day" 
@@ -657,10 +657,10 @@ export default function Dashboard() {
               </ResponsiveContainer>
               
               {/* Weekly Total */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium text-black">Gesamt diese Woche:</span>
-                  <span className="text-2xl font-bold text-black">
+                  <span className="text-base font-medium text-black">Gesamt diese Woche:</span>
+                  <span className="text-xl font-bold text-black">
                     {formatCurrency(animatedWeeklyTotal)}
                   </span>
                 </div>
@@ -668,11 +668,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Bar Section - Revert to original */}
-          <div className="mb-12">
-            <h3 className="text-xl font-bold text-black mb-4">Ziel</h3>
-            <div className="bg-white rounded-xl p-4">
-              <div className="mb-4">
+          {/* Progress Bar Section */}
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-black mb-3">Ziel</h3>
+            <div className="bg-white rounded-xl p-3">
+              <div className="mb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600">
                     {isWeeklyGoal ? "Wöchentliches Ziel" : "Globales Ziel"}
@@ -682,13 +682,13 @@ export default function Dashboard() {
                   </span>
                   <span className="text-sm font-bold text-black">{formatCurrency(goalAmount)}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-black h-3 rounded-full transition-all duration-500 ease-out"
+                    className="bg-black h-2 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${progressData.progressPercentage}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex justify-between items-center mt-1">
                   <span className="text-xs text-gray-500">0€</span>
                   <span className="text-xs text-gray-500">{formatCurrency(goalAmount)}</span>
                 </div>
@@ -696,19 +696,19 @@ export default function Dashboard() {
               
               <div className="flex justify-between items-center">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-black">{formatCurrency(animatedProgressTotal)}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-xl font-bold text-black">{formatCurrency(animatedProgressTotal)}</div>
+                  <div className="text-xs text-gray-500">
                     {isWeeklyGoal ? "Gesammelt diese Woche" : "Gesammelt insgesamt"}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-black">{formatCurrency(animatedProgressRemaining)}</div>
-                  <div className="text-sm text-gray-500">Noch zu erreichen</div>
+                  <div className="text-xl font-bold text-black">{formatCurrency(animatedProgressRemaining)}</div>
+                  <div className="text-xs text-gray-500">Noch zu erreichen</div>
                 </div>
               </div>
 
               {/* Goal Type Switcher */}
-              <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+              <div className="mt-3 p-2 bg-gray-100 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-black">Wöchentlich</span>
                   <Switch
@@ -725,7 +725,7 @@ export default function Dashboard() {
                   setNewGoalName(goalName)
                   setShowGoalDialog(true)
                 }}
-                className="w-full mt-4 bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                className="w-full mt-3 bg-black text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors"
               >
                 Ziel ändern
               </button>
@@ -754,9 +754,9 @@ export default function Dashboard() {
                 <Input
                   type="text"
                   placeholder="(optional) Wofür sparst du? z.B. Urlaub"
+                  className="text-center text-base"
                   value={newGoalName}
                   onChange={e => setNewGoalName(e.target.value)}
-                  className="text-center text-base"
                 />
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowGoalDialog(false)}>
@@ -787,9 +787,9 @@ export default function Dashboard() {
           </Dialog>
 
           {/* Monthly Tips with Month Selector */}
-          <div className="mb-8">
+          <div className="mb-4">
             {getMonthTips(selectedMonth.year, selectedMonth.month) === 0 && (
-              <div className="text-gray-500 text-center py-4">Noch keine Einträge in diesem Monat</div>
+              <div className="text-gray-500 text-center py-3">Noch keine Einträge in diesem Monat</div>
             )}
           </div>
         </div>
