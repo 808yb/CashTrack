@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Plus, User, Home } from "lucide-react"
+import { Calendar, Plus, User, Home, X, Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { formatCurrency, formatDate, getTodayKey, getStoredTips, saveTip, endShift, getStoredTags, saveTag, updateTag, deleteTag, Tag } from "@/lib/utils"
@@ -14,6 +14,7 @@ import Coin2Icon from "@/ButtonIcons/Coin2Icon"
 import Coin5Icon from "@/ButtonIcons/CustomCoinsIcon"
 import { useNotifications } from "@/contexts/NotificationContext"
 import NotificationBell from "@/components/NotificationBell"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function AddTips() {
   const router = useRouter()
@@ -40,6 +41,54 @@ export default function AddTips() {
     "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", 
     "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-gray-600"
   ]
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut" as const
+      }
+    }
+  };
+
+  const buttonVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut" as const
+      }
+    },
+    hover: {
+      scale: 1.05,
+      transition: {
+        duration: 0.2
+      }
+    },
+    tap: {
+      scale: 0.95,
+      transition: {
+        duration: 0.1
+      }
+    }
+  };
 
   useEffect(() => {
     const loadTodayTips = async () => {
@@ -236,13 +285,29 @@ export default function AddTips() {
   }
 
   return (
-    <div className="px-4">
+    <motion.div 
+      className="px-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Current Total */}
-      <div className="bg-white rounded-2xl p-6 mb-6">
+      <motion.div 
+        className="bg-white rounded-2xl p-6 mb-6"
+        variants={itemVariants}
+      >
         <div className="flex justify-between items-center mb-6">
           <div>
             <div className="text-lg font-medium text-black">Trinkgeld</div>
-            <div className="text-3xl font-bold text-black">{formatCurrency(todayTotal)}</div>
+            <motion.div 
+              className="text-3xl font-bold text-black"
+              key={todayTotal}
+              initial={{ scale: 1.1, color: "#10b981" }}
+              animate={{ scale: 1, color: "#000000" }}
+              transition={{ duration: 0.3 }}
+            >
+              {formatCurrency(todayTotal)}
+            </motion.div>
           </div>
           <div className="text-right">
             <div className="text-gray-600">{formatDate(new Date())}</div>
@@ -251,71 +316,125 @@ export default function AddTips() {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
-            onClick={() => {
-              setEditAmount(todayTotal.toString().replace(".", ","))
-              setShowEditDialog(true)
-            }}
-          >
-            Ändern
-          </Button>
-          <Button
-            variant="default"
-            className="flex-1"
-            onClick={() => setShowEndShiftDialog(true)}
-          >
-            Schicht beenden
-          </Button>
+          <motion.div variants={buttonVariants} className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+              onClick={() => {
+                setEditAmount(todayTotal.toString().replace(".", ","))
+                setShowEditDialog(true)
+              }}
+            >
+              Ändern
+            </Button>
+          </motion.div>
+          <motion.div variants={buttonVariants} className="flex-1">
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={() => setShowEndShiftDialog(true)}
+            >
+              Schicht beenden
+            </Button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tip Buttons Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <motion.div 
+        className="grid grid-cols-2 gap-4"
+        variants={containerVariants}
+      >
         {/* +1€ */}
-        <Button
-          variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-          onClick={() => addTip(tipValues.one)}
-        >
-          <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin1Icon width={48} height={48} />
-        </Button>
+        <motion.div variants={buttonVariants}>
+          <Button
+            variant="outline"
+            className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
+            onClick={() => addTip(tipValues.one)}
+            asChild
+          >
+            <motion.div
+              whileHover="hover"
+              whileTap="tap"
+              variants={buttonVariants}
+            >
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+                <Coin1Icon width={48} height={48} />
+              </div>
+            </motion.div>
+          </Button>
+        </motion.div>
 
         {/* +2,50€ */}
-        <Button
-          variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-          onClick={() => addTip(tipValues.two)}
-        >
-          <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin2Icon width={48} height={48} />
-        </Button>
+        <motion.div variants={buttonVariants}>
+          <Button
+            variant="outline"
+            className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
+            onClick={() => addTip(tipValues.two)}
+            asChild
+          >
+            <motion.div
+              whileHover="hover"
+              whileTap="tap"
+              variants={buttonVariants}
+            >
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+                <Coin2Icon width={48} height={48} />
+              </div>
+            </motion.div>
+          </Button>
+        </motion.div>
 
         {/* +5€ */}
-        <Button
-          variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-          onClick={() => addTip(tipValues.five)}
-        >
-          <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-          <Coin5Icon width={48} height={48} />
-        </Button>
+        <motion.div variants={buttonVariants}>
+          <Button
+            variant="outline"
+            className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
+            onClick={() => addTip(tipValues.five)}
+            asChild
+          >
+            <motion.div
+              whileHover="hover"
+              whileTap="tap"
+              variants={buttonVariants}
+            >
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+                <Coin5Icon width={48} height={48} />
+              </div>
+            </motion.div>
+          </Button>
+        </motion.div>
 
         {/* Custom Amount */}
-        <Button
-          variant="outline"
-          className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2"
-          onClick={() => setShowCustomInput(true)}
-        >
-          <div className="text-xl font-bold text-black">Freibetrag</div>
-          <Coin5Icon width={48} height={48} />
-        </Button>
-      </div>
+        <motion.div variants={buttonVariants}>
+          <Button
+            variant="outline"
+            className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
+            onClick={() => setShowCustomInput(true)}
+            asChild
+          >
+            <motion.div
+              whileHover="hover"
+              whileTap="tap"
+              variants={buttonVariants}
+            >
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-xl font-bold text-black">Freibetrag</div>
+                <Coin5Icon width={48} height={48} />
+              </div>
+            </motion.div>
+          </Button>
+        </motion.div>
+      </motion.div>
 
       {/* Beitrag bearbeiten button */}
-      <div className="mt-4">
+      <motion.div 
+        className="mt-4"
+        variants={itemVariants}
+      >
         <Button
           variant="outline"
           className="w-full bg-white border-gray-200 hover:bg-gray-50 text-black"
@@ -323,7 +442,7 @@ export default function AddTips() {
         >
           Beitrag bearbeiten
         </Button>
-      </div>
+      </motion.div>
 
       {/* Custom Amount Dialog */}
       <Dialog open={showCustomInput} onOpenChange={setShowCustomInput}>
@@ -582,7 +701,7 @@ export default function AddTips() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   )
 }
 
@@ -634,11 +753,20 @@ function TagManageItem({
             />
           ))}
         </div>
-        <Button size="sm" onClick={handleSave}>
-          ✓
+        <Button 
+          size="sm" 
+          onClick={handleSave}
+          className="rounded-full w-8 h-8 p-0 bg-green-50 hover:bg-green-100 border-green-200 hover:border-green-300 transition-all duration-200"
+        >
+          <Check className="w-4 h-4 text-green-600" />
         </Button>
-        <Button size="sm" variant="outline" onClick={handleCancel}>
-          ✕
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleCancel}
+          className="rounded-full w-8 h-8 p-0 bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-gray-300 transition-all duration-200"
+        >
+          <X className="w-4 h-4 text-gray-600" />
         </Button>
       </div>
     )

@@ -113,7 +113,7 @@ export async function migrateToIndexedDB(): Promise<void> {
   }
 }
 
-function updateProgress(progress: MigrationProgress, toastId: string) {
+function updateProgress(progress: MigrationProgress, toastId: string | number) {
   const messages = {
     tips: 'Migrating tips data...',
     tags: 'Migrating tags...',

@@ -6,15 +6,15 @@ import { Toaster } from '@/components/ui/sonner'
 import PageTransition from "@/components/PageTransition"
 import { Plus, Home, Calendar, User } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
-import Link from "next/link"
 import NotificationBell from "@/components/NotificationBell"
 import { useCallback, useEffect, useState } from "react"
 import { migrateToIndexedDB } from "@/lib/migrate"
 
 const navigationConfig = [
   { path: '/', icon: Home, label: 'Home', index: 0 },
-  { path: '/add-tips', icon: Plus, label: 'Add Tips', index: 1 },
-  { path: '/calendar', icon: Calendar, label: 'Calendar', index: 2 }
+  { path: '/add-tips', icon: Plus, label: 'Tips', index: 1 },
+  { path: '/calendar', icon: Calendar, label: 'Kalender', index: 2 },
+  { path: '/profile', icon: User, label: 'Account', index: 3 }
 ];
 
 function AnimatedLayout({ children }: { children: React.ReactNode }) {
@@ -51,11 +51,6 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
             <h1 className="text-2xl font-bold text-black">CashTrack</h1>
             <div className="flex items-center gap-2">
               <NotificationBell />
-              <Link href="/profile" prefetch={false}>
-                <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-              </Link>
             </div>
           </div>
         </div>
@@ -73,29 +68,24 @@ function AnimatedLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-md mx-auto">
           <div className="bg-white border-t border-gray-200 shadow-lg">
             <div className="flex justify-around py-4">
-              {navigationConfig.map(({ path, icon: Icon, index }) => (
+              {navigationConfig.map(({ path, icon: Icon, label, index }) => (
                 <button
                   key={path}
-                  className={`flex flex-col items-center transition-colors ${
-                    path === '/add-tips'
-                      ? ''
-                      : isActive(path)
-                      ? 'text-blue-600'
+                  className={`flex flex-col items-center gap-1 ${
+                    isActive(path)
+                      ? 'text-white'
                       : 'text-black'
                   }`}
                   onClick={() => handleNavigation(path, index)}
                 >
-                  {path === '/add-tips' ? (
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                        isActive(path) ? 'bg-blue-600' : 'bg-black'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                  ) : (
-                    <Icon className="w-6 h-6" />
-                  )}
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      isActive(path) ? 'bg-primary' : 'bg-transparent'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs">{label}</span>
                 </button>
               ))}
             </div>

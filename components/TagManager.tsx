@@ -106,9 +106,9 @@ export default function TagManager({ open, onOpenChange }: TagManagerProps) {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDeleteTag(tag.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="rounded-full w-8 h-8 p-0 bg-red-50 hover:bg-red-100 border-red-200 hover:border-red-300 transition-all duration-200"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4 text-red-600" />
                     </Button>
                   </div>
                 </div>

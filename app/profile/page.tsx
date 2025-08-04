@@ -1,8 +1,8 @@
 "use client"
 
-import { getStoredTips } from "@/lib/utils"
+import { getStoredTips, validateAndDeduplicateImportedTips, removeDuplicates } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Profile() {
   const [showExport, setShowExport] = useState(false);
@@ -11,6 +11,26 @@ export default function Profile() {
   const [importData, setImportData] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [totalTips, setTotalTips] = useState<number>(0);
+
+  // Calculate total tips
+  useEffect(() => {
+    async function calculateTotalTips() {
+      const tips = await getStoredTips();
+      const total = tips.reduce((sum, tip) => sum + tip.amount, 0);
+      setTotalTips(total);
+    }
+    calculateTotalTips();
+  }, []);
+
+  // Format currency for display
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: 2,
+    }).format(amount)
+  }
 
   // Export: Show textarea with JSON and Kopieren button
   async function handleExport() {
@@ -40,15 +60,28 @@ export default function Profile() {
   }
   async function handleImportData() {
     try {
-      const importedTips = JSON.parse(importData);
-      if (!Array.isArray(importedTips)) throw new Error("Ungültiges Format");
+      const importedData = JSON.parse(importData);
+      if (!Array.isArray(importedData)) throw new Error("Ungültiges Format");
       if (!window.confirm("Alle aktuellen Trinkgeld-Daten werden durch die importierten Daten ersetzt. Fortfahren?")) return;
+      
+      // Validate, transform, and remove duplicates from imported data
+      const validTips = validateAndDeduplicateImportedTips(importedData);
+      
       await (await import("@/lib/db")).db.init();
       await (await import("@/lib/db")).db.clearTips();
-      for (const tip of importedTips) {
+      for (const tip of validTips) {
         await (await import("@/lib/db")).db.addTip(tip);
       }
-      setMessage("Import erfolgreich! Deine Trinkgeld-Daten wurden wiederhergestellt.");
+      
+      const originalCount = importedData.length;
+      const finalCount = validTips.length;
+      const duplicatesRemoved = originalCount - finalCount;
+      
+      const message = duplicatesRemoved > 0 
+        ? `Import erfolgreich! ${duplicatesRemoved} doppelte Einträge wurden automatisch entfernt. Deine Trinkgeld-Daten wurden wiederhergestellt.`
+        : "Import erfolgreich! Deine Trinkgeld-Daten wurden wiederhergestellt.";
+      
+      setMessage(message);
       setShowModal(true);
       setShowImport(false);
       setImportData("");
@@ -61,18 +94,14 @@ export default function Profile() {
   // Cleanup duplicate tips
   async function handleCleanupTips() {
     const tips = await getStoredTips();
-    const seen = new Set();
-    const deduped = tips.filter(tip => {
-      const key = `${tip.date}|${tip.amount}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    const deduped = removeDuplicates(tips);
+    
     if (deduped.length === tips.length) {
       setMessage("Keine doppelten Einträge gefunden. Deine Daten sind bereits sauber.");
       setShowModal(true);
       return;
     }
+    
     await (await import("@/lib/db")).db.init();
     await (await import("@/lib/db")).db.clearTips();
     for (const tip of deduped) {
@@ -99,6 +128,18 @@ export default function Profile() {
               CashTrack ist eine kleine App, die dir hilft, dein Trinkgeld einfach zu tracken – ohne Konto, ohne Cloud, ohne Stress.<br/>
               Gemacht von einem von euch, weil Excel  nervt und die meisten Apps zu viel wollen.
             </p>
+          </div>
+          <div>
+            <span className="text-2xl">💰</span>
+            <span className="font-semibold ml-2">Gesamt-Trinkgeld gesammelt</span>
+            <div className="mt-2 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <div className="text-2xl font-bold text-green-700">
+                {formatCurrency(totalTips)}
+              </div>
+              <p className="text-sm text-green-600 mt-1">
+                Das ist die Summe aller deiner Trinkgeld-Einträge seit Beginn des Trackings!
+              </p>
+            </div>
           </div>
           <div>
             <span className="text-2xl">🔒</span>

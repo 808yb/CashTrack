@@ -236,24 +236,66 @@ export async function updateTodayTips(newAmount: number): Promise<void> {
 export async function updateTipForDate(dateKey: string, amount: number, note?: string, tags?: string[]): Promise<void> {
   try {
     await db.init()
+    const existingTips = await db.getTipsByDate(dateKey)
     
-    // Remove any existing entries for the date
-    await db.deleteTipsByDate(dateKey)
-
-    // Add the new consolidated entry if amount > 0 or there's a note or tags
-    if (amount > 0 || (note && note.trim() !== "") || (tags && tags.length > 0)) {
-      const entry: TipEntry = {
+    if (existingTips.length > 0) {
+      // Update the first tip for this date
+      const tipToUpdate = existingTips[0]
+      const updatedTip: TipEntry = {
+        ...tipToUpdate,
+        amount,
+        note,
+        tags,
+      }
+      await db.updateTip(tipToUpdate.timestamp, updatedTip)
+    } else {
+      // Create new tip if none exists for this date
+      const newTip: TipEntry = {
         date: dateKey,
         amount,
-        note: note?.trim() || undefined,
+        note,
         tags,
         timestamp: Date.now(),
       }
-      await db.addTip(entry)
+      await db.addTip(newTip)
     }
   } catch (error) {
     console.error('Error updating tip for date:', error)
   }
+}
+
+/**
+ * Removes duplicate tips based on date and amount combination.
+ * Keeps the first occurrence of each unique date|amount pair.
+ */
+export function removeDuplicates(tips: TipEntry[]): TipEntry[] {
+  const seen = new Set<string>()
+  return tips.filter(tip => {
+    const key = `${tip.date}|${tip.amount}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+/**
+ * Validates and transforms imported tip data, removing duplicates automatically.
+ * Returns an array of valid TipEntry objects with duplicates removed.
+ */
+export function validateAndDeduplicateImportedTips(importedData: any[]): TipEntry[] {
+  // Validate and transform imported data
+  const validTips: TipEntry[] = importedData
+    .filter((item) => item.date && typeof item.amount === "number" && item.timestamp)
+    .map((item) => ({
+      date: item.date,
+      amount: item.amount,
+      note: item.note || undefined,
+      tags: Array.isArray(item.tags) ? item.tags : [],
+      timestamp: item.timestamp,
+    }))
+
+  // Remove duplicates and return
+  return removeDuplicates(validTips)
 }
 
 export type { Tag } from "./types";

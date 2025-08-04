@@ -90,6 +90,12 @@ export default function Dashboard() {
     return Math.ceil((days + start.getDay() + 1) / 7)
   }
 
+  // Helper function to get current month key
+  const getCurrentMonthKey = () => {
+    const now = new Date()
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}`
+  }
+
   // Load goal from localStorage on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -115,6 +121,12 @@ export default function Dashboard() {
         const currentWeek = getCurrentWeekNumber()
         localStorage.setItem("cashtrack-last-reset-week", currentWeek.toString())
       }
+      
+      // Initialize monthly reset tracking if not exists
+      if (!localStorage.getItem("cashtrack-last-reset-month")) {
+        const currentMonth = getCurrentMonthKey()
+        localStorage.setItem("cashtrack-last-reset-month", currentMonth)
+      }
     }
   }, [])
 
@@ -130,12 +142,12 @@ export default function Dashboard() {
     const lastGoalKey = localStorage.getItem("cashtrack-fireworks-last")
     const currentGoalKey = isWeeklyGoal
       ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
-      : `cashtrack-fireworks-global-goal-${goalAmount}`
+      : `cashtrack-fireworks-month-${getCurrentMonthKey()}-goal-${goalAmount}`
 
     // Add milestoneKey for deduplication
     const milestoneKey = isWeeklyGoal
       ? `milestone-achievement-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
-      : `milestone-achievement-global-goal-${goalAmount}`;
+      : `milestone-achievement-month-${getCurrentMonthKey()}-goal-${goalAmount}`;
 
     // Deduplicate using IndexedDB
     async function achievementNotificationExists() {
@@ -146,7 +158,7 @@ export default function Dashboard() {
 
     const shouldNotify =
       hasReachedGoal &&
-      (lastGoalType !== (isWeeklyGoal ? "weekly" : "global") || lastGoalKey !== currentGoalKey)
+      (lastGoalType !== (isWeeklyGoal ? "weekly" : "monthly") || lastGoalKey !== currentGoalKey)
 
     if (shouldNotify) {
       achievementNotificationExists().then(exists => {
@@ -155,12 +167,12 @@ export default function Dashboard() {
           setShouldFireworks(true)
           localStorage.setItem("cashtrack-goal-reached", "true")
           localStorage.setItem("cashtrack-fireworks-last", currentGoalKey)
-          localStorage.setItem("cashtrack-goal-type-notified", isWeeklyGoal ? "weekly" : "global")
+          localStorage.setItem("cashtrack-goal-type-notified", isWeeklyGoal ? "weekly" : "monthly")
 
           addNotification({
             type: 'achievement',
             title: 'Ziel erreicht! 🎉',
-            message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'globales'} Ziel von ${goalAmount}€ erreicht!`,
+            message: `Fantastisch! Du hast dein ${isWeeklyGoal ? 'wöchentliches' : 'monatliches'} Ziel von ${goalAmount}€ erreicht!`,
             icon: '🏆',
             priority: 'high',
             milestoneKey
@@ -174,16 +186,16 @@ export default function Dashboard() {
     }
   }, [tips, goalAmount, addNotification, isWeeklyGoal])
 
-  // Reset fireworks when goal changes or week changes
+  // Reset fireworks when goal changes or week/month changes
   useEffect(() => {
     if (typeof window === "undefined") return
     
     const goalKey = isWeeklyGoal
       ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
-      : `cashtrack-fireworks-global-goal-${goalAmount}`
+      : `cashtrack-fireworks-month-${getCurrentMonthKey()}-goal-${goalAmount}`
     const lastFired = localStorage.getItem("cashtrack-fireworks-last")
     
-    console.log('Goal/Week Change Check:', {
+    console.log('Goal/Week/Month Change Check:', {
       goalKey,
       lastFired,
       isWeeklyGoal,
@@ -191,7 +203,7 @@ export default function Dashboard() {
     })
     
     if (lastFired && lastFired !== goalKey) {
-      console.log('Clearing last fired due to goal/week change')
+      console.log('Clearing last fired due to goal/week/month change')
       localStorage.removeItem("cashtrack-fireworks-last")
       // Also reset goalReached state when goal changes
       setGoalReached(false)
@@ -231,20 +243,53 @@ export default function Dashboard() {
     }
   }, [isWeeklyGoal])
 
+  // Reset monthly goal when new month starts
+  useEffect(() => {
+    if (!isWeeklyGoal) {
+      const checkMonthlyReset = () => {
+        const lastResetMonth = localStorage.getItem("cashtrack-last-reset-month")
+        const currentMonth = getCurrentMonthKey()
+        
+        if (lastResetMonth !== currentMonth) {
+          // New month started, reset goal reached state
+          setGoalReached(false)
+          localStorage.setItem("cashtrack-last-reset-month", currentMonth)
+          
+          // Show notification about new month
+          toast('📅 Neuer Monat gestartet! Dein monatliches Ziel wurde zurückgesetzt.', {
+            duration: 4000,
+            icon: '🎯',
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          })
+        }
+      }
+      
+      checkMonthlyReset()
+      
+      // Check every hour for month change
+      const interval = setInterval(checkMonthlyReset, 60 * 60 * 1000)
+      return () => clearInterval(interval)
+    }
+  }, [isWeeklyGoal])
+
   // Check for milestones and add notifications (deduplicated via IndexedDB)
   useEffect(() => {
     const checkAndNotifyMilestone = async () => {
       const progressData = getProgressData();
       const percentage = progressData.progressPercentage;
       const week = getCurrentWeekNumber();
+      const month = getCurrentMonthKey();
 
       // Helper to check if a milestone notification exists
-      async function milestoneNotificationExists(type: 'tip' | 'motivation', goalAmount: number, isWeeklyGoal: boolean, week: number) {
+      async function milestoneNotificationExists(type: 'tip' | 'motivation', goalAmount: number, isWeeklyGoal: boolean, week: number, month: string) {
         await db.init();
         const all = await db.getAllNotifications();
         const milestoneKey = isWeeklyGoal
           ? `milestone-${type}-week-${week}-goal-${goalAmount}`
-          : `milestone-${type}-global-goal-${goalAmount}`;
+          : `milestone-${type}-month-${month}-goal-${goalAmount}`;
         return all.some(n => n.type === type && n.milestoneKey === milestoneKey);
       }
 
@@ -253,8 +298,8 @@ export default function Dashboard() {
         const type: 'tip' = 'tip';
         const milestoneKey = isWeeklyGoal
           ? `milestone-${type}-week-${week}-goal-${goalAmount}`
-          : `milestone-${type}-global-goal-${goalAmount}`;
-        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week);
+          : `milestone-${type}-month-${month}-goal-${goalAmount}`;
+        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week, month);
         if (!exists) {
           addNotification({
             type,
@@ -271,8 +316,8 @@ export default function Dashboard() {
         const type: 'motivation' = 'motivation';
         const milestoneKey = isWeeklyGoal
           ? `milestone-${type}-week-${week}-goal-${goalAmount}`
-          : `milestone-${type}-global-goal-${goalAmount}`;
-        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week);
+          : `milestone-${type}-month-${month}-goal-${goalAmount}`;
+        const exists = await milestoneNotificationExists(type, goalAmount, isWeeklyGoal, week, month);
         if (!exists) {
           addNotification({
             type,
@@ -450,12 +495,14 @@ export default function Dashboard() {
         progressPercentage
       }
     } else {
-      // Global goal logic - sum all tips from all time
-      const allTimeTotal = tips.reduce((sum, tip) => sum + tip.amount, 0)
-      const progressPercentage = Math.min((allTimeTotal / goalAmount) * 100, 100)
+      // Monthly goal logic
+      const currentMonth = getCurrentMonthKey()
+      const [year, month] = currentMonth.split('-').map(Number)
+      const monthlyTotal = getMonthTips(year, month - 1) // month is 0-based in getMonthTips
+      const progressPercentage = Math.min((monthlyTotal / goalAmount) * 100, 100)
       return {
-        total: allTimeTotal,
-        remaining: Math.max(0, goalAmount - allTimeTotal),
+        total: monthlyTotal,
+        remaining: Math.max(0, goalAmount - monthlyTotal),
         progressPercentage
       }
     }
@@ -497,7 +544,7 @@ export default function Dashboard() {
   const handleGoalTypeChange = useCallback((checked: boolean) => {
     const newIsWeekly = !checked
     setIsWeeklyGoal(newIsWeekly)
-    localStorage.setItem("cashtrack-goal-type", newIsWeekly ? "weekly" : "global")
+    localStorage.setItem("cashtrack-goal-type", newIsWeekly ? "weekly" : "monthly")
   }, [])
 
   // Mapping from short to full weekday names (German)
@@ -536,7 +583,7 @@ export default function Dashboard() {
     const hasReachedGoal = progressData.progressPercentage >= 100
     const goalKey = isWeeklyGoal
       ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
-      : `cashtrack-fireworks-global-goal-${goalAmount}`
+      : `cashtrack-fireworks-month-${getCurrentMonthKey()}-goal-${goalAmount}`
     const lastFired = localStorage.getItem("cashtrack-fireworks-last")
     if (hasReachedGoal && lastFired !== goalKey) {
       setShouldFireworks(true)
@@ -546,13 +593,13 @@ export default function Dashboard() {
     }
   }, [tips, goalAmount, isWeeklyGoal])
 
-  // Reset fireworks when goal changes or week changes
+  // Reset fireworks when goal changes or week/month changes
   useEffect(() => {
     if (typeof window === "undefined") return
-    // Clear last fired if goal or week changes
+    // Clear last fired if goal or week/month changes
     const goalKey = isWeeklyGoal
       ? `cashtrack-fireworks-week-${getCurrentWeekNumber()}-goal-${goalAmount}`
-      : `cashtrack-fireworks-global-goal-${goalAmount}`
+      : `cashtrack-fireworks-month-${getCurrentMonthKey()}-goal-${goalAmount}`
     const lastFired = localStorage.getItem("cashtrack-fireworks-last")
     if (lastFired && lastFired !== goalKey) {
       localStorage.removeItem("cashtrack-fireworks-last")
@@ -668,14 +715,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Bar Section - Revert to original */}
+          {/* Progress Bar Section */}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-black mb-4">Ziel</h3>
             <div className="bg-white rounded-xl p-4">
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600">
-                    {isWeeklyGoal ? "Wöchentliches Ziel" : "Globales Ziel"}
+                    {isWeeklyGoal ? "Wöchentliches Ziel" : "Monatliches Ziel"}
                     {goalName && (
                       <span className="ml-2 text-xs text-gray-500"> {goalName}</span>
                     )}
@@ -698,7 +745,7 @@ export default function Dashboard() {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-black">{formatCurrency(animatedProgressTotal)}</div>
                   <div className="text-sm text-gray-500">
-                    {isWeeklyGoal ? "Gesammelt diese Woche" : "Gesammelt insgesamt"}
+                    {isWeeklyGoal ? "Gesammelt diese Woche" : "Gesammelt diesen Monat"}
                   </div>
                 </div>
                 <div className="text-center">
@@ -715,7 +762,7 @@ export default function Dashboard() {
                     checked={!isWeeklyGoal}
                     onCheckedChange={handleGoalTypeChange}
                   />
-                  <span className="text-sm font-medium text-black">Global</span>
+                  <span className="text-sm font-medium text-black">Monatlich</span>
                 </div>
               </div>
               
