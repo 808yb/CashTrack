@@ -133,15 +133,15 @@ export async function updateTag(tagId: string, updates: Partial<Tag>): Promise<v
 export async function getDaySummary(dateKey: string): Promise<{ amount: number; note?: string; tags?: string[] }> {
   try {
     const tips = await getTipsByDate(dateKey)
-    // Find the consolidated entry for the day (assuming endShift creates one)
-    const dayEntry = tips.find((tip) => tip.date === dateKey)
-
-    if (dayEntry) {
-      return { amount: dayEntry.amount, note: dayEntry.note, tags: dayEntry.tags }
+    
+    if (tips.length > 0) {
+      // If there are multiple tips, find the one with the highest amount (main entry)
+      // or just return the first one if they're all the same
+      const mainEntry = tips.reduce((max, tip) => tip.amount > max.amount ? tip : max, tips[0])
+      return { amount: mainEntry.amount, note: mainEntry.note, tags: mainEntry.tags }
     } else {
-      // If no consolidated entry, sum up individual tips for the day
-      const totalAmount = tips.reduce((sum, tip) => sum + tip.amount, 0)
-      return { amount: totalAmount }
+      // If no tips exist for this date
+      return { amount: 0 }
     }
   } catch (error) {
     console.error('Error getting day summary:', error)
@@ -179,17 +179,22 @@ export async function updateDayNote(dateKey: string, newNote: string, tags?: str
   try {
     await db.init()
     const tips = await getTipsByDate(dateKey)
-    const tip = tips.find((t) => t.date === dateKey)
-
-    if (tip) {
-      // Update existing entry's note and tags
-      const updatedTip = {
-        ...tip,
+    
+    // Clear all existing tips for this date first to prevent duplicates
+    await db.deleteTipsByDate(dateKey)
+    
+    // Find the tip with the highest amount (the main entry)
+    const mainTip = tips.reduce((max, tip) => tip.amount > max.amount ? tip : max, tips[0])
+    
+    if (mainTip) {
+      // Update existing entry's note and tags, keeping the original amount
+      const updatedTip: TipEntry = {
+        ...mainTip,
         note: newNote.trim() || undefined,
         tags,
         timestamp: Date.now(),
       }
-      await db.updateTip(updatedTip)
+      await db.addTip(updatedTip)
     } else {
       // If no entry exists for the day, create one with 0 amount and the note
       const newTip: TipEntry = {
@@ -236,20 +241,12 @@ export async function updateTodayTips(newAmount: number): Promise<void> {
 export async function updateTipForDate(dateKey: string, amount: number, note?: string, tags?: string[]): Promise<void> {
   try {
     await db.init()
-    const existingTips = await db.getTipsByDate(dateKey)
     
-    if (existingTips.length > 0) {
-      // Update the first tip for this date
-      const tipToUpdate = existingTips[0]
-      const updatedTip: TipEntry = {
-        ...tipToUpdate,
-        amount,
-        note,
-        tags,
-      }
-      await db.updateTip(tipToUpdate.timestamp, updatedTip)
-    } else {
-      // Create new tip if none exists for this date
+    // Clear all existing tips for this date first to prevent duplicates
+    await db.deleteTipsByDate(dateKey)
+    
+    // Add new consolidated tip if amount is greater than 0
+    if (amount > 0) {
       const newTip: TipEntry = {
         date: dateKey,
         amount,
@@ -296,6 +293,59 @@ export function validateAndDeduplicateImportedTips(importedData: any[]): TipEntr
 
   // Remove duplicates and return
   return removeDuplicates(validTips)
+}
+
+/**
+ * Clean up duplicate tips for a specific date by keeping only the main entry
+ * (the one with the highest amount) and removing all others.
+ */
+export async function cleanupDuplicateTipsForDate(dateKey: string): Promise<void> {
+  try {
+    await db.init()
+    const tips = await getTipsByDate(dateKey)
+    
+    if (tips.length > 1) {
+      // Find the tip with the highest amount (main entry)
+      const mainTip = tips.reduce((max, tip) => tip.amount > max.amount ? tip : max, tips[0])
+      
+      // Clear all tips for this date
+      await db.deleteTipsByDate(dateKey)
+      
+      // Add back only the main tip
+      await db.addTip(mainTip)
+    }
+  } catch (error) {
+    console.error('Error cleaning up duplicate tips for date:', error)
+  }
+}
+
+/**
+ * Clean up all duplicate tips in the database by keeping only the main entry
+ * for each date (the one with the highest amount).
+ */
+export async function cleanupAllDuplicateTips(): Promise<void> {
+  try {
+    await db.init()
+    const allTips = await getAllTips()
+    
+    // Group tips by date
+    const tipsByDate = new Map<string, TipEntry[]>()
+    allTips.forEach(tip => {
+      if (!tipsByDate.has(tip.date)) {
+        tipsByDate.set(tip.date, [])
+      }
+      tipsByDate.get(tip.date)!.push(tip)
+    })
+    
+    // Clean up duplicates for each date
+    for (const [dateKey, tips] of tipsByDate) {
+      if (tips.length > 1) {
+        await cleanupDuplicateTipsForDate(dateKey)
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up all duplicate tips:', error)
+  }
 }
 
 export type { Tag } from "./types";
