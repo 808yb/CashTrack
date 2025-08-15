@@ -2,7 +2,7 @@
 
 import useEmblaCarousel from 'embla-carousel-react'
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Calendar, Plus, User, Home } from "lucide-react"
+import { Calendar, Plus, User } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency, formatDate, getTodayKey, getStoredTips } from "@/lib/utils"
 import { useSwipeable } from 'react-swipeable'
@@ -842,43 +842,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">
-        <div className="flex justify-around py-4">
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '0')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/'))
-            } else {
-              router.push('/')
-            }
-          }}>
-            <Home className="w-6 h-6 text-black" />
-          </button>
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '1')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/add-tips'))
-            } else {
-              router.push('/add-tips')
-            }
-          }}>
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-              <Plus className="w-5 h-5 text-white" />
-            </div>
-          </button>
-          <button className="flex flex-col items-center" onClick={() => {
-            sessionStorage.setItem('navIndex', '2')
-            if (document.startViewTransition) {
-              document.startViewTransition(() => router.push('/calendar'))
-            } else {
-              router.push('/calendar')
-            }
-          }}>
-            <Calendar className="w-6 h-6 text-black" />
-          </button>
-        </div>
-      </div>
+
 
 
     </div>

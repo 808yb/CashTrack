@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Plus, User, Home, X, Check } from "lucide-react"
-import Link from "next/link"
+import { X, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { formatCurrency, formatDate, getTodayKey, getStoredTips, saveTip, endShift, getStoredTags, saveTag, updateTag, deleteTag, Tag } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -13,8 +12,90 @@ import Coin1Icon from "@/ButtonIcons/Coin1Icon"
 import Coin2Icon from "@/ButtonIcons/Coin2Icon"
 import Coin5Icon from "@/ButtonIcons/CustomCoinsIcon"
 import { useNotifications } from "@/contexts/NotificationContext"
-import NotificationBell from "@/components/NotificationBell"
 import { motion, AnimatePresence } from "framer-motion"
+
+// Constants moved outside component to prevent recreation on each render
+const TAG_COLORS = [
+  "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", 
+  "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-gray-600"
+]
+
+const DEFAULT_TIP_VALUES = { one: 1, two: 2.5, five: 5 }
+
+// Animation variants moved outside component
+const CONTAINER_VARIANTS = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+}
+
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut" as const
+    }
+  }
+}
+
+const BUTTON_VARIANTS = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.3,
+      ease: "easeOut" as const
+    }
+  },
+  hover: {
+    scale: 1.05,
+    transition: {
+      duration: 0.2
+    }
+  },
+  tap: {
+    scale: 0.95,
+    transition: {
+      duration: 0.1
+    }
+  }
+}
+
+// Utility function for number input validation
+const handleNumberInput = (value: string, setter: (value: string) => void) => {
+  const regex = /^[0-9,]*$/
+  if (regex.test(value) || value === "") {
+    const parts = value.split(",")
+    if (parts.length <= 2 && (parts[1]?.length || 0) <= 2) {
+      setter(value)
+    }
+  }
+}
+
+// Utility function for parsing and validating amounts
+const parseAmount = (amountString: string): number | null => {
+  try {
+    const normalizedAmount = amountString.trim().replace(",", ".")
+    const amount = Number.parseFloat(normalizedAmount)
+    
+    if (!isNaN(amount) && amount > 0) {
+      return Math.round(amount * 100) / 100
+    }
+    return null
+  } catch (error) {
+    console.error('Error parsing amount:', error)
+    return null
+  }
+}
 
 export default function AddTips() {
   const router = useRouter()
@@ -33,62 +114,8 @@ export default function AddTips() {
   const [editAmount, setEditAmount] = useState("")
   const [showEditTipDialog, setShowEditTipDialog] = useState(false)
   const [editTipAmount, setEditTipAmount] = useState("")
-  const [tipValues, setTipValues] = useState({ one: 1, two: 2.5, five: 5 })
-  const [selectedTipButton, setSelectedTipButton] = useState<'one' | 'two' | 'five'>('one')
+  const [tipValues, setTipValues] = useState(DEFAULT_TIP_VALUES)
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
-
-  const tagColors = [
-    "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", 
-    "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-gray-600"
-  ]
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut" as const
-      }
-    }
-  };
-
-  const buttonVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.3,
-        ease: "easeOut" as const
-      }
-    },
-    hover: {
-      scale: 1.05,
-      transition: {
-        duration: 0.2
-      }
-    },
-    tap: {
-      scale: 0.95,
-      transition: {
-        duration: 0.1
-      }
-    }
-  };
 
   useEffect(() => {
     const loadTodayTips = async () => {
@@ -122,105 +149,68 @@ export default function AddTips() {
   }, [])
 
   const addTip = (amount: number) => {
-    // Ensure amount is a valid number and round to 2 decimal places to avoid floating point issues
     if (typeof amount !== 'number' || isNaN(amount)) {
-      console.error('Invalid amount:', amount);
-      return;
+      console.error('Invalid amount:', amount)
+      return
     }
     
-    const roundedAmount = Math.round(amount * 100) / 100;
+    const roundedAmount = Math.round(amount * 100) / 100
     if (roundedAmount <= 0) {
-      console.error('Amount must be greater than 0:', roundedAmount);
-      return;
+      console.error('Amount must be greater than 0:', roundedAmount)
+      return
     }
 
     try {
-      saveTip(roundedAmount);
-      const newTotal = todayTotal + roundedAmount;
-      setTodayTotal(newTotal);
+      saveTip(roundedAmount)
+      const newTotal = todayTotal + roundedAmount
+      setTodayTotal(newTotal)
       
       // Check for milestone achievements (every 10€)
-      const milestone = Math.floor(newTotal / 10) * 10;
-      const previousMilestone = Math.floor(todayTotal / 10) * 10;
+      const milestone = Math.floor(newTotal / 10) * 10
+      const previousMilestone = Math.floor(todayTotal / 10) * 10
       if (milestone > previousMilestone && milestone > 0) {
-        // Add milestone notification
         addNotification({
           type: 'achievement',
           title: 'Meilenstein erreicht! 🎯',
           message: `Du hast ${milestone}€ Trinkgeld für heute gesammelt!`,
           icon: '💰',
           priority: 'medium'
-        });
+        })
       }
     } catch (error) {
-      console.error('Error saving tip:', error);
+      console.error('Error saving tip:', error)
     }
   }
 
   const handleCustomTip = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = customAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
-      
-      if (!isNaN(amount) && amount > 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        addTip(roundedAmount);
-        setCustomAmount("");
-        setShowCustomInput(false);
-      } else {
-        console.error('Invalid custom amount:', customAmount);
-      }
-    } catch (error) {
-      console.error('Error processing custom tip:', error);
+    const amount = parseAmount(customAmount)
+    if (amount !== null) {
+      addTip(amount)
+      setCustomAmount("")
+      setShowCustomInput(false)
     }
   }
 
   const handleEditTips = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = editAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
-      
-      if (!isNaN(amount) && amount >= 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        // Use endShift to consolidate and update today's tips
-        endShift(roundedAmount, shiftNote, selectedTags); // Pass current note and tags
-        setTodayTotal(roundedAmount);
-        setEditAmount("");
-        setShowEditDialog(false);
-      } else {
-        console.error('Invalid edit amount:', editAmount);
-      }
-    } catch (error) {
-      console.error('Error editing tips:', error);
+    const amount = parseAmount(editAmount)
+    if (amount !== null) {
+      endShift(amount, shiftNote, selectedTags)
+      setTodayTotal(amount)
+      setEditAmount("")
+      setShowEditDialog(false)
     }
   }
 
   const handleEditTipValues = () => {
-    try {
-      // Replace comma with period for proper number parsing
-      const normalizedAmount = editTipAmount.trim().replace(",", ".");
-      const amount = Number.parseFloat(normalizedAmount);
-      
-      if (!isNaN(amount) && amount > 0) {
-        // Round to 2 decimal places to avoid floating point precision issues
-        const roundedAmount = Math.round(amount * 100) / 100;
-        setTipValues(prev => ({ ...prev, [selectedTipButton]: roundedAmount }));
-        setEditTipAmount("");
-        setShowEditTipDialog(false);
-      } else {
-        console.error('Invalid tip value amount:', editTipAmount);
-      }
-    } catch (error) {
-      console.error('Error editing tip values:', error);
+    const amount = parseAmount(editTipAmount)
+    if (amount !== null) {
+      setTipValues(prev => ({ ...prev, one: amount })) // Assuming editing the first button
+      setEditTipAmount("")
+      setShowEditTipDialog(false)
     }
   }
 
   const handleEndShift = () => {
-    // End the shift with the current total and optional note and tags
     const noteToSave = shiftNote.trim() || undefined
     endShift(todayTotal, noteToSave, selectedTags)
 
@@ -271,31 +261,10 @@ export default function AddTips() {
     }
   }
 
-  // Input validation for numbers and comma only
-  const handleNumberInput = (value: string, setter: (value: string) => void) => {
-    // Only allow numbers, comma, and backspace
-    const regex = /^[0-9,]*$/
-    if (regex.test(value) || value === "") {
-      // Limit to 2 decimal places
-      const parts = value.split(",")
-      if (parts.length <= 2 && (parts[1]?.length || 0) <= 2) {
-        setter(value)
-      }
-    }
-  }
-
   return (
-    <motion.div 
-      className="px-4"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="px-4">
       {/* Current Total */}
-      <motion.div 
-        className="bg-white rounded-2xl p-6 mb-6"
-        variants={itemVariants}
-      >
+      <div className="bg-white rounded-2xl p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <div className="text-lg font-medium text-black">Trinkgeld</div>
@@ -316,7 +285,7 @@ export default function AddTips() {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <motion.div variants={buttonVariants} className="flex-1">
+          <div className="flex-1">
             <Button
               variant="outline"
               className="w-full bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
@@ -327,8 +296,8 @@ export default function AddTips() {
             >
               Ändern
             </Button>
-          </motion.div>
-          <motion.div variants={buttonVariants} className="flex-1">
+          </div>
+          <div className="flex-1">
             <Button
               variant="default"
               className="w-full"
@@ -336,105 +305,87 @@ export default function AddTips() {
             >
               Schicht beenden
             </Button>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Tip Buttons Grid */}
-      <motion.div 
-        className="grid grid-cols-2 gap-4"
-        variants={containerVariants}
-      >
+      <div className="grid grid-cols-2 gap-4">
         {/* +1€ */}
-        <motion.div variants={buttonVariants}>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
             onClick={() => addTip(tipValues.one)}
-            asChild
           >
-            <motion.div
-              whileHover="hover"
-              whileTap="tap"
-              variants={buttonVariants}
-            >
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-                <Coin1Icon width={48} height={48} />
-              </div>
-            </motion.div>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="text-xl font-bold text-black">+ {tipValues.one.toFixed(tipValues.one % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+              <Coin1Icon width={48} height={48} />
+            </div>
           </Button>
         </motion.div>
 
         {/* +2,50€ */}
-        <motion.div variants={buttonVariants}>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
             onClick={() => addTip(tipValues.two)}
-            asChild
           >
-            <motion.div
-              whileHover="hover"
-              whileTap="tap"
-              variants={buttonVariants}
-            >
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-                <Coin2Icon width={48} height={48} />
-              </div>
-            </motion.div>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="text-xl font-bold text-black">+ {tipValues.two.toFixed(tipValues.two % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+              <Coin2Icon width={48} height={48} />
+            </div>
           </Button>
         </motion.div>
 
         {/* +5€ */}
-        <motion.div variants={buttonVariants}>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
             onClick={() => addTip(tipValues.five)}
-            asChild
           >
-            <motion.div
-              whileHover="hover"
-              whileTap="tap"
-              variants={buttonVariants}
-            >
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
-                <Coin5Icon width={48} height={48} />
-              </div>
-            </motion.div>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="text-xl font-bold text-black">+ {tipValues.five.toFixed(tipValues.five % 1 === 0 ? 0 : 2).replace(".", ",")}€</div>
+              <Coin5Icon width={48} height={48} />
+            </div>
           </Button>
         </motion.div>
 
         {/* Custom Amount */}
-        <motion.div variants={buttonVariants}>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
           <Button
             variant="outline"
             className="h-32 bg-white border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 w-full"
             onClick={() => setShowCustomInput(true)}
-            asChild
           >
-            <motion.div
-              whileHover="hover"
-              whileTap="tap"
-              variants={buttonVariants}
-            >
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-xl font-bold text-black">Freibetrag</div>
-                <Coin5Icon width={48} height={48} />
-              </div>
-            </motion.div>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="text-xl font-bold text-black">Freibetrag</div>
+              <Coin5Icon width={48} height={48} />
+            </div>
           </Button>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* Beitrag bearbeiten button */}
-      <motion.div 
-        className="mt-4"
-        variants={itemVariants}
-      >
+      <div className="mt-4">
         <Button
           variant="outline"
           className="w-full bg-white border-gray-200 hover:bg-gray-50 text-black"
@@ -442,7 +393,7 @@ export default function AddTips() {
         >
           Beitrag bearbeiten
         </Button>
-      </motion.div>
+      </div>
 
       {/* Custom Amount Dialog */}
       <Dialog open={showCustomInput} onOpenChange={setShowCustomInput}>
@@ -568,7 +519,7 @@ export default function AddTips() {
             <div>
               <label className="block text-sm font-medium mb-2">Farbe</label>
               <div className="grid grid-cols-4 gap-2">
-                {tagColors.map((color) => (
+                {TAG_COLORS.map((color) => (
                   <button
                     key={color}
                     className={`w-8 h-8 rounded-full ${color} border-2 ${
@@ -611,7 +562,7 @@ export default function AddTips() {
                   tag={tag}
                   onEdit={handleEditTag}
                   onDelete={handleDeleteTag}
-                  tagColors={tagColors}
+                  tagColors={TAG_COLORS}
                 />
               ))}
             </div>
@@ -701,7 +652,7 @@ export default function AddTips() {
           </div>
         </DialogContent>
       </Dialog>
-    </motion.div>
+    </div>
   )
 }
 
